@@ -63,7 +63,7 @@ def test_simulation_ablation_endpoints():
             "name": f"Junction {idx + 1}",
             "lat": 12.9177 + idx * 0.002,
             "lng": 77.6228 + idx * 0.002,
-            "bc": bc[node],
+            "bc": dict(bc)[node],
             "degree": G.degree(node),
             "affected": G.degree(node) * 8500,
             "risk": "MEDIUM"
@@ -103,7 +103,7 @@ def test_segmentation_pipeline_endpoint():
     
     # Encode to PNG bytes
     is_success, buffer = cv2.imencode(".png", img)
-    io_buf = io.BytesIO(buffer)
+    io_buf = io.BytesIO(buffer.tobytes())
 
     # Wrap in Starlette UploadFile
     upload_file = UploadFile(filename="test_tile.png", file=io_buf)

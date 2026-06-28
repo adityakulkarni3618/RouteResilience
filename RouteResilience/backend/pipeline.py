@@ -4,6 +4,7 @@ Full end-to-end: segmentation → skeletonization → graph healing → centrali
 """
 
 import numpy as np
+from typing import Optional
 import os
 import json
 from pathlib import Path
@@ -92,7 +93,7 @@ def simulate_occlusion_augmentation(tile: np.ndarray, canopy_fraction: float = 0
         ax = np.random.randint(20, 80)
         ay = np.random.randint(15, 60)
         angle = np.random.randint(0, 180)
-        cv2.ellipse(mask, (cx, cy), (ax, ay), angle, 0, 360, 1.0, -1)
+        cv2.ellipse(mask, (cx, cy), (ax, ay), angle, 0, 360, (1.0,), -1)
     
     # Apply canopy color (greenish)
     canopy_color = np.array([0.15, 0.42, 0.18], dtype=np.float32)
@@ -224,7 +225,7 @@ def skeletonize_mask(binary_mask: np.ndarray):
             img = eroded
             if cv2.countNonZero(img) == 0:
                 break
-        return (skel > 0).astype(np.uint8)
+        return (np.asarray(skel) > 0).astype(np.uint8)
 
 
 def skeleton_to_graph(skeleton: np.ndarray):
@@ -533,7 +534,7 @@ if __name__ == "__main__":
 #  NEW PIPELINE SIMULATIONS
 # ─────────────────────────────────────────────
 
-def cascade_failure_simulation(G, trigger_node, max_depth: int = 5, bc_dict: dict = None) -> list:
+def cascade_failure_simulation(G, trigger_node, max_depth: int = 5, bc_dict: Optional[dict] = None) -> list:
     """
     Simulate realistic cascade failure propagation through road network.
     When a node is removed, neighbors with betweenness above a dropping 
@@ -760,7 +761,7 @@ def calculate_connectivity_ratio(G_before, G_after) -> float:
         
         # Percentage connectivity ratio increase
         ratio = (after_pct / (before_pct + 1e-8))
-        return round(float(ratio), 3)
+        return round(ratio, 3)
     except Exception:
         return 0.0
 

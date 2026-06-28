@@ -15,7 +15,7 @@ import tempfile
 import cv2
 import shutil
 import networkx as nx
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel
 from pipeline import (
     calculate_relaxed_iou,
@@ -119,7 +119,7 @@ def cv_road_extraction(image_path: str, shape: tuple) -> np.ndarray:
         opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
         # Morphological closing to join minor occlusion gaps
         closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel, iterations=2)
-        return (closing > 127).astype(np.uint8)
+        return (np.asarray(closing) > 127).astype(np.uint8)
     except Exception as e:
         print(f"[WARNING] CV road extraction fallback failed: {e}")
         # Build synthetic diagonal grid lines as absolute fallback
@@ -146,7 +146,8 @@ async def segment_image(file: UploadFile = File(...)):
     size_kb = len(contents) / 1024
 
     # Save uploaded file to temp file for processing
-    suffix = os.path.splitext(file.filename)[1]
+    filename = file.filename or "image.png"
+    suffix = os.path.splitext(filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
         temp_file.write(contents)
         temp_filepath = temp_file.name
@@ -191,7 +192,7 @@ async def segment_image(file: UploadFile = File(...)):
         # Create a target ground-truth mask for metrics calculations
         # Dilate pred_mask slightly and add minor noise/dropouts to simulate true labels
         kernel = np.ones((5, 5), np.uint8)
-        gt_mask = cv2.dilate(pred_mask, kernel, iterations=1)
+        gt_mask = np.asarray(cv2.dilate(pred_mask, kernel, iterations=1))
         np.random.seed(42)
         noise = (np.random.rand(*original_shape) > 0.985).astype(np.uint8)
         gt_mask = np.clip(gt_mask - noise, 0, 1).astype(np.uint8)
@@ -245,7 +246,7 @@ async def segment_image(file: UploadFile = File(...)):
                 "occluded_region_iou": round(min(0.914, max(0.55, iou - 0.08)), 4),
                 "occlusion_coverage": round(random.uniform(0.18, 0.42), 3),
                 "road_pixels": int(pred_mask.sum()),
-                "healed_pixels": int(healed_count * 180),
+                "healed_pixels": healed_count * 180,
                 "relaxed_iou_3px": round(min(0.975, max(0.81, relaxed_iou_3)), 4),
                 "relaxed_iou_5px": round(min(0.985, max(0.85, relaxed_iou_5)), 4),
             },
@@ -381,9 +382,9 @@ def run_simulation(req: SimulationRequest):
                 "name": f"Junction {idx + 1}",
                 "lat": 12.97 + idx * 0.005,
                 "lng": 77.59 + idx * 0.005,
-                "bc": round(bc.get(node, 0.0), 4),
+                "bc": round(dict(bc).get(node, 0.0), 4),
                 "degree": G.degree(node),
-                "affected": int(G.degree(node) * 8500),
+                "affected": G.degree(node) * 8500,
                 "risk": "MEDIUM"
             })
 
@@ -542,7 +543,7 @@ class CascadeRequest(BaseModel):
 
 
 @app.post("/api/simulate/cascade")
-def simulate_cascade(req: CascadeRequest):
+def simulate_cascade(req: CascadeRequest) -> dict[str, Any]:
     """
     Simulate cascade failure starting from a trigger node on the active graph.
     Uses real cascade model from pipeline.py.
@@ -578,7 +579,7 @@ def simulate_cascade(req: CascadeRequest):
                 for node in MOCK_NODES:
                     if node["id"] in failed_ids:
                         continue
-                    dist = ((parent["lat"] - node["lat"])**2 + (parent["lng"] - node["lng"])**2)**0.5
+                    dist = ((float(parent["lat"]) - float(node["lat"]))**2 + (float(parent["lng"]) - float(node["lng"]))**2)**0.5
                     if dist < 0.02:
                         if node["betweenness"] > threshold:
                             failures.append({
