@@ -103,8 +103,7 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const wsUrl = API_URL.replace(/^http/, 'ws') + '/ws/live-telemetry';
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`ws://${API_URL.replace('http://', '').replace('https://', '')}/ws/live-telemetry`);
     ws.onopen = () => {
       setTelemetry(prev => ({ ...prev, connected: true }));
     };
