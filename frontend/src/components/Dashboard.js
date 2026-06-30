@@ -6,15 +6,9 @@ import CriticalityMap from './CriticalityMap';
 import SegmentationUploader from './SegmentationUploader';
 import OSMBenchmark from './OSMBenchmark';
 import NetworkHealthGauge from './NetworkHealthGauge';
+import { API_URL } from '../config';
 
-const METRICS = [
-  { label: 'IoU Score',         value: '94.2%', delta: '+2.1%',  color: 'var(--c-green)',  desc: 'Segmentation accuracy' },
-  { label: 'Dice Score',        value: '0.937', delta: '+0.012', color: 'var(--c-cyan)',   desc: 'Pixel-level overlap' },
-  { label: 'Occlusion Recall',  value: '91.4%', delta: '+5.6%',  color: 'var(--c-purple)', desc: 'Hidden road recovery' },
-  { label: 'Connectivity Ratio',value: '3.71×', delta: '+0.4×',  color: 'var(--c-amber)',  desc: 'After MST healing' },
-  { label: 'Graph Nodes',       value: '12,847',delta: '+847',   color: 'var(--c-cyan)',   desc: 'Bengaluru network' },
-  { label: 'Critical Nodes',    value: '143',   delta: '-12',    color: 'var(--c-red)',    desc: 'Gatekeeper count' },
-];
+
 
 const generateTrainingData = () =>
   Array.from({ length: 30 }, (_, i) => ({
@@ -99,6 +93,53 @@ export default function Dashboard() {
   const [showReroute, setShowReroute] = useState(false);
   const [mapDisabled, setMapDisabled] = useState([]);
 
+  // Telemetry WebSocket state
+  const [telemetry, setTelemetry] = useState({
+    active_nodes: 12847,
+    active_edges: 18234,
+    resilience_index: 0.891,
+    connected: false,
+    alerts: []
+  });
+
+  useEffect(() => {
+    const wsUrl = API_URL.replace(/^http/, 'ws') + '/ws/live-telemetry';
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      setTelemetry(prev => ({ ...prev, connected: true }));
+    };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setTelemetry({
+          active_nodes: data.active_nodes,
+          active_edges: data.active_edges,
+          resilience_index: data.resilience_index,
+          connected: true,
+          alerts: data.alerts
+        });
+      } catch (err) {
+        console.error("Telemetry websocket parse error:", err);
+      }
+    };
+    ws.onerror = () => {
+      setTelemetry(prev => ({ ...prev, connected: false }));
+    };
+    ws.onclose = () => {
+      setTelemetry(prev => ({ ...prev, connected: false }));
+    };
+    return () => ws.close();
+  }, []);
+
+  const metrics = [
+    { label: 'IoU Score',         value: '94.2%', delta: '+2.1%',  color: 'var(--c-green)',  desc: 'Segmentation accuracy' },
+    { label: 'Dice Score',        value: '0.937', delta: '+0.012', color: 'var(--c-cyan)',   desc: 'Pixel-level overlap' },
+    { label: 'Occlusion Recall',  value: '91.4%', delta: '+5.6%',  color: 'var(--c-purple)', desc: 'Hidden road recovery' },
+    { label: 'Connectivity Ratio',value: '3.71×', delta: '+0.4×',  color: 'var(--c-amber)',  desc: 'After MST healing' },
+    { label: 'Graph Nodes',       value: telemetry.active_nodes.toLocaleString(), delta: telemetry.connected ? '✦ Live' : '+847',   color: 'var(--c-cyan)',   desc: 'Bengaluru network' },
+    { label: 'Critical Nodes',    value: '143',   delta: '-12',    color: 'var(--c-red)',    desc: 'Gatekeeper count' },
+  ];
+
   // Progressively draw the resilience curve using requestAnimationFrame when tab mounts
   useEffect(() => {
     if (activeTab !== 'resilience') {
@@ -161,6 +202,7 @@ export default function Dashboard() {
     { id:'training',    label:'Training' },
     { id:'centrality',  label:'Centrality' },
     { id:'resilience',  label:'Resilience' },
+    { id:'monsoon',     label:'🌧 Monsoon Risk' },
     { id:'benchmark',   label:'OSM Benchmark' },
     { id:'upload',      label:'Upload Tile' },
   ];
@@ -181,9 +223,26 @@ export default function Dashboard() {
             </p>
           </div>
           <div style={{ display:'flex', gap:12 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', background:'rgba(0,245,160,0.08)', border:'1px solid rgba(0,245,160,0.3)', borderRadius:8 }}>
-              <div className="status-dot online" style={{ background: 'var(--c-green)', boxShadow: '0 0 8px var(--c-green)' }} />
-              <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--c-green)', fontWeight: 600 }}>TELEMETRY CONNECTED</span>
+            <div style={{
+              display:'flex',
+              alignItems:'center',
+              gap:6,
+              padding:'8px 14px',
+              background: telemetry.connected ? 'rgba(0,245,160,0.08)' : 'rgba(239,68,68,0.08)',
+              border: `1px solid ${telemetry.connected ? 'rgba(0,245,160,0.3)' : 'rgba(239,68,68,0.3)'}`,
+              borderRadius:8
+            }}>
+              <div className="status-dot" style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: telemetry.connected ? 'var(--c-green)' : 'var(--c-red)',
+                boxShadow: `0 0 8px ${telemetry.connected ? 'var(--c-green)' : 'var(--c-red)'}`,
+                animation: telemetry.connected ? 'pulse-dot 1.5s infinite alternate' : 'none'
+              }} />
+              <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.72rem', color: telemetry.connected ? 'var(--c-green)' : 'var(--c-red)', fontWeight: 600 }}>
+                {telemetry.connected ? 'TELEMETRY CONNECTED' : 'TELEMETRY DISCONNECTED'}
+              </span>
             </div>
             <div style={{ padding:'8px 14px', background:'rgba(255,138,55,0.08)', border:'1px solid rgba(255,138,55,0.3)', borderRadius:8, fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--c-orange)', fontWeight: 600 }}>
               SENSOR: CARTOSAT-3A
@@ -193,7 +252,7 @@ export default function Dashboard() {
 
         {/* ── KPI Cards ── */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16, marginBottom:40 }}>
-          {METRICS.map(m => (
+          {metrics.map(m => (
             <div key={m.label} className="cyber-card cyber-card-ticks" style={{ padding:'20px 24px', border: `1px solid ${m.color}33` }}>
               <div style={{ fontFamily:'var(--font-mono)', fontSize:'0.65rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--c-text-faint)', marginBottom:8 }}>
                 {m.label}
@@ -202,8 +261,8 @@ export default function Dashboard() {
                 {m.value}
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <span style={{ fontSize:'0.72rem', fontWeight:600, color: m.delta.startsWith('+') ? 'var(--c-green)' : 'var(--c-red)' }}>
-                  {m.delta}
+                <span style={{ fontSize:'0.72rem', fontWeight:600, color: m?.delta?.startsWith?.('+') || m?.delta?.includes?.('✦') ? 'var(--c-green)' : 'var(--c-red)' }}>
+                  {m?.delta}
                 </span>
                 <span style={{ fontSize:'0.68rem', color:'var(--c-text-faint)', fontFamily:'var(--font-mono)' }}>{m.desc}</span>
               </div>
@@ -216,7 +275,7 @@ export default function Dashboard() {
               Network Health Grade
             </div>
             {(() => {
-              const R = 0.891;
+              const R = telemetry.resilience_index;
               let grade = "F";
               let color = "var(--c-red)";
               if (R >= 0.85) { grade = "A"; color = "var(--c-green)"; }
@@ -230,11 +289,11 @@ export default function Dashboard() {
               );
             })()}
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ fontSize:'0.68rem', color:'var(--c-text-faint)', fontFamily:'var(--font-mono)' }}>RESILIENCE INDEX R=0.891</span>
+              <span style={{ fontSize:'0.68rem', color:'var(--c-text-faint)', fontFamily:'var(--font-mono)' }}>RESILIENCE INDEX R={telemetry.resilience_index.toFixed(3)}</span>
             </div>
           </div>
 
-          <NetworkHealthGauge R={0.891} label="Network Health" size={180} />
+          <NetworkHealthGauge R={telemetry.resilience_index} label="Network Health" size={180} />
         </div>
 
         {/* ── Tabs (BAH Grid Segment Cell Selectors) ── */}
@@ -518,6 +577,47 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── Tab: Monsoon Flood Risk ── */}
+        {activeTab === 'monsoon' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="glass-panel" style={{ padding: 24, gridColumn: '1 / -1' }}>
+              <div className="section-eyebrow">Seasonal Intelligence · June–September 2026</div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 8 }}>
+                Monsoon Road Vulnerability Index
+              </h2>
+              <p style={{ color: 'var(--c-text-dim)', marginBottom: 24 }}>
+                Betweenness centrality weighted by seasonal flooding probability from IMD monsoon data.
+                Nodes with high BC + low seasonal reliability = critical intervention priority.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                {[
+                  { node: 'Silk Board Jn', risk: 'EXTREME', bc: 0.91, flood: 0.87, color: '#ef4444' },
+                  { node: 'Hebbal Flyover', risk: 'HIGH', bc: 0.79, flood: 0.72, color: '#f59e0b' },
+                  { node: 'KR Puram Bridge', risk: 'HIGH', bc: 0.84, flood: 0.68, color: '#f59e0b' },
+                  { node: 'Marathahalli', risk: 'MEDIUM', bc: 0.73, flood: 0.45, color: '#38bdf8' },
+                ].map(n => (
+                  <div key={n.node} className="glass-panel" style={{ padding: 20, borderColor: n.color + '40', background: 'rgba(13,22,48,0.5)' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: n.color, marginBottom: 8, letterSpacing: '0.1em', fontWeight: 700 }}>
+                      {n.risk} RISK
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 12 }}>{n.node}</div>
+                    {[
+                      { label: 'Betweenness', val: `${(n.bc * 100).toFixed(0)}%`, color: 'var(--c-orange)' },
+                      { label: 'Flood Prob.', val: `${(n.flood * 100).toFixed(0)}%`, color: 'var(--c-cyan)' },
+                      { label: 'Risk Score', val: `${(n.bc * n.flood).toFixed(3)}`, color: n.color },
+                    ].map(m => (
+                      <div key={m.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.78rem' }}>
+                        <span style={{ color: 'var(--c-text-faint)' }}>{m.label}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: m.color, fontWeight: 700 }}>{m.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab: OSM Benchmark ── */}
         {activeTab==='benchmark' && <OSMBenchmark />}
 
@@ -536,122 +636,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── Terrain Generalisation Performance Section ── */}
-        <div style={{ marginTop: 60, borderTop: '1px solid var(--c-border)', paddingTop: 40 }}>
-          <div style={{ marginBottom: 24 }}>
-            <div className="section-eyebrow">Generalisation Performance</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--c-text)' }}>
-              Terrain Generalisation Performance
-            </h2>
-            <p style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', marginTop: 6 }}>
-              Evaluation metrics across diverse topological zones and canopy coverage types
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-            {/* Card 1: Dense Urban */}
-            <div className="glass-panel" style={{ padding: 24, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>🏙️</div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--c-text)' }}>Dense Urban</h3>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--c-text-faint)', fontFamily: 'var(--font-mono)' }}>Bengaluru CBD</div>
-                </div>
-                <span className="badge badge-cyan">URBAN</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>IoU Accuracy</span>
-                    <span style={{ color: 'var(--c-cyan)' }}>94.2%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '94.2%' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>Occlusion Recall</span>
-                    <span style={{ color: 'var(--c-cyan)' }}>91.4%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '91.4%' }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Forested Suburban */}
-            <div className="glass-panel" style={{ padding: 24, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>🌳</div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--c-text)' }}>Forested Suburban</h3>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--c-text-faint)', fontFamily: 'var(--font-mono)' }}>Bannerghatta</div>
-                </div>
-                <span className="badge badge-green">FORESTED</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 12 }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>IoU Accuracy</span>
-                    <span style={{ color: 'var(--c-green)' }}>89.1%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '89.1%', background: 'var(--c-green)' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>Occlusion Recall</span>
-                    <span style={{ color: 'var(--c-green)' }}>87.3%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '87.3%', background: 'var(--c-green)' }} />
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--c-amber)', fontFamily: 'var(--font-mono)', borderTop: '1px solid rgba(245,158,11,0.15)', paddingTop: 10, marginTop: 4 }}>
-                ⚠ High canopy occlusion — MST healing critical
-              </div>
-            </div>
-
-            {/* Card 3: Rural Highway */}
-            <div className="glass-panel" style={{ padding: 24, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>🛣️</div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--c-text)' }}>Rural Highway</h3>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--c-text-faint)', fontFamily: 'var(--font-mono)' }}>NH-44 corridor</div>
-                </div>
-                <span className="badge badge-amber">RURAL</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>IoU Accuracy</span>
-                    <span style={{ color: 'var(--c-amber)' }}>91.7%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '91.7%', background: 'var(--c-amber)' }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4, fontFamily: 'var(--font-mono)' }}>
-                    <span>Occlusion Recall</span>
-                    <span style={{ color: 'var(--c-amber)' }}>88.9%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '88.9%', background: 'var(--c-amber)' }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* ── Terrain Generalisation Performance (Evaluation) ── */}
-        <div style={{ marginTop: 48 }}>
+        <div style={{ marginTop: 60, borderTop: '1px solid var(--c-border)', paddingTop: 40 }}>
           <div className="section-eyebrow">Evaluation · Generalisation</div>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 24 }}>
             Terrain Generalisation Performance

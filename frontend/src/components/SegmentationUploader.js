@@ -1,5 +1,7 @@
+// Top of file imports
 import React, { useState, useRef, useCallback } from 'react';
 import { CITIES, getActiveLocation, setActiveLocation } from '../utils/locationHelper';
+import { API_URL } from '../config';
 
 
 
@@ -123,7 +125,7 @@ export default function SegmentationUploader({ onLocationChange }) {
       const formData = new FormData();
       formData.append('file', f);
 
-      const response = await fetch('http://localhost:8000/api/segment', {
+      const response = await fetch(`${API_URL}/api/segment`, {
         method: 'POST',
         body: formData,
       });

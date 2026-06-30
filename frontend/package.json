@@ -10,6 +10,7 @@
     "cesium": "^1.142.0",
     "framer-motion": "^10.18.0",
     "gsap": "^3.12.3",
+    "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",

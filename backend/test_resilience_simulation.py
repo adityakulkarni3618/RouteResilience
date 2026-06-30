@@ -54,6 +54,7 @@ def test_simulation_ablation_endpoints():
     # Calculate betweenness centrality
     bc = nx.betweenness_centrality(G, weight="weight")
     nx.set_node_attributes(G, bc, "betweenness")
+    bc_dict: dict = bc
     
     formatted_nodes = []
     for idx, node in enumerate(list(G.nodes)[:8]):
@@ -63,7 +64,7 @@ def test_simulation_ablation_endpoints():
             "name": f"Junction {idx + 1}",
             "lat": 12.9177 + idx * 0.002,
             "lng": 77.6228 + idx * 0.002,
-            "bc": dict(bc)[node],
+            "bc": bc_dict[node],
             "degree": G.degree(node),
             "affected": G.degree(node) * 8500,
             "risk": "MEDIUM"

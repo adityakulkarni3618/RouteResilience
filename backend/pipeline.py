@@ -225,7 +225,7 @@ def skeletonize_mask(binary_mask: np.ndarray):
             img = eroded
             if cv2.countNonZero(img) == 0:
                 break
-        return (np.asarray(skel) > 0).astype(np.uint8)
+        return (np.asarray(skel, dtype=np.uint8) > 0).astype(np.uint8)
 
 
 def skeleton_to_graph(skeleton: np.ndarray):

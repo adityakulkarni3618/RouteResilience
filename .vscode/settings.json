@@ -1,10 +1,11 @@
 {
     "files.encoding": "utf8",
     "files.autoGuessEncoding": true,
-    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
-    "python.analysis.venvPath": "${workspaceFolder}",
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+    "python.analysis.venvPath": "${workspaceFolder}/backend",
     "python.analysis.venv": "venv",
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/venv/Lib/site-packages"
+        "${workspaceFolder}/backend/venv/Lib/site-packages",
+        "${workspaceFolder}/backend"
     ]
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getShiftedNodes, getActiveLocation } from '../utils/locationHelper';
+import { API_URL } from '../config';
 
 const CITY_NODES_BASE = [
   { id: 0, name: 'Silk Board Junction',  bc: 0.91, degree: 12, affected: 125000 },
@@ -30,7 +31,7 @@ export default function CascadeSimulator() {
     setVisibleCount(0);
 
     try {
-      const response = await fetch('http://localhost:8000/api/simulate/cascade', {
+      const response = await fetch(`${API_URL}/api/simulate/cascade`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

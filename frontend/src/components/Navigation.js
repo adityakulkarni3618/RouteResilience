@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/simulation', label: 'Simulation' },
   { path: '/compare', label: 'Compare' },
+  { path: '/score', label: 'Score' },
   { path: '/about', label: 'About' },
   { path: '/cascade', label: 'Cascade' },
 ];

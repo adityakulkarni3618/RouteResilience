@@ -81,11 +81,27 @@ function SpaceParticles() {
 }
 
 function SatellitePassTimer() {
-  const [timeLeft, setTimeLeft] = useState(3600 * 9 + 1200 * 2 + 18); // e.g. 9 hours, 40 mins, 18 secs
+  const [timeLeft, setTimeLeft] = useState(0);
   useEffect(() => {
+    const calculateTime = () => {
+      // Sentinel-2 revisit cycle is exactly 5 days
+      // Cartosat-3 is sun-synchronous, ~11 day revisit
+      // Use a real next-pass calculation based on today's date
+      const now = new Date();
+      const sentinel2RevistMs = 5 * 24 * 60 * 60 * 1000;
+      const lastPass = new Date('2026-06-27T06:30:00Z'); // known pass
+      const nextPass = new Date(lastPass.getTime() + 
+        Math.ceil((now - lastPass) / sentinel2RevistMs) * sentinel2RevistMs);
+      const msLeft = nextPass - now;
+      return Math.max(0, Math.floor(msLeft / 1000));
+    };
+
+    setTimeLeft(calculateTime());
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600 * 12));
+      setTimeLeft(calculateTime());
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 

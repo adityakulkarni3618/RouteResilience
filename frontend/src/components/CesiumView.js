@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getShiftedNodes, getActiveLocation } from '../utils/locationHelper';
-import { Viewer, Entity, CameraFlyTo } from 'resium';
-import { Cartesian3 } from 'cesium';
+import { Viewer, Entity, CameraFlyTo, GeoJsonDataSource } from 'resium';
+import { Cartesian3, Color } from 'cesium';
 
 // Set base URL to CDN so Webpack doesn't need copy plugin configurations!
 window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.115.0/Build/Cesium/';
@@ -26,7 +26,7 @@ const createPinSvg = (color) => {
   `);
 };
 
-export default function CesiumView({ activeLoc, customNodes }) {
+export default function CesiumView({ activeLoc, customNodes, activeGeoJSON }) {
   const loc = activeLoc || getActiveLocation();
   const activeNodes = customNodes || getShiftedNodes(CITY_NODES);
 
@@ -111,6 +111,46 @@ export default function CesiumView({ activeLoc, customNodes }) {
             />
           );
         })}
+
+        {activeGeoJSON && (
+          <GeoJsonDataSource
+            data={activeGeoJSON}
+            onLoad={(dataSource) => {
+              const entities = dataSource.entities.values;
+              entities.forEach((entity) => {
+                const feature = entity.properties;
+                if (!feature) return;
+
+                const getProp = (propName) => {
+                  const val = feature[propName];
+                  return (val && typeof val.getValue === 'function') ? val.getValue() : val;
+                };
+
+                const betweenness = getProp('betweenness') ?? 0.5;
+                const isBroken = !!getProp('broken');
+                const isHealed = !!getProp('healed');
+
+                let colorVal = '#38bdf8';
+                if (isBroken) {
+                  colorVal = '#ef4444';
+                } else if (isHealed) {
+                  colorVal = '#a78bfa';
+                } else if (betweenness > 0.7) {
+                  colorVal = '#ef4444';
+                } else if (betweenness > 0.4) {
+                  colorVal = '#f59e0b';
+                }
+
+                const color = Color.fromCssString(colorVal);
+
+                if (entity.polyline) {
+                  entity.polyline.material = color;
+                  entity.polyline.width = isBroken ? 2.0 : 3.5;
+                }
+              });
+            }}
+          />
+        )}
       </Viewer>
 
       {/* Info Popup Overlay */}

@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { getShiftedNodes, getActiveLocation, setActiveLocation, CITIES } from '../utils/locationHelper';
+import { getShiftedNodes, getShiftedGeoJSON, getActiveLocation, setActiveLocation, CITIES } from '../utils/locationHelper';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
-import CriticalityMap from './CriticalityMap';
+import { jsPDF } from 'jspdf';
+import CriticalityMap, { ROAD_GEOJSON } from './CriticalityMap';
 import CesiumView from './CesiumView';
+import { API_URL } from '../config';
 
 const SCENARIOS = [
   { id:'flood',        label:'Flash Flood',      icon:'🌊', color:'#38bdf8', desc:'Node + all adjacent edges removed', mult:1.0 },
@@ -66,13 +68,36 @@ export default function SimulationPage() {
   const [simRunning, setSimRunning]        = useState(false);
   const [simLog, setSimLog]                = useState([]);
   const [showReroute, setShowReroute]      = useState(false);
-  const [shareCopied, setShareCopied]      = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [rainfall, setRainfall] = useState(50);
+  const [floodPrediction, setFloodPrediction] = useState(null);
+  const [, setLoadingFlood] = useState(false);
+
+  useEffect(() => {
+    if (!activeLoc) return;
+    const fetchPrediction = async () => {
+      setLoadingFlood(true);
+      try {
+        const response = await fetch(`${API_URL}/api/predict/flood-risk?lat=${activeLoc.lat}&lng=${activeLoc.lng}&rainfall_mm=${rainfall}`, {
+          method: 'POST'
+        });
+        if (!response.ok) throw new Error("Flood risk prediction failed");
+        const data = await response.json();
+        setFloodPrediction(data);
+      } catch (err) {
+        console.warn("Flood predictive API failed:", err);
+      } finally {
+        setLoadingFlood(false);
+      }
+    };
+    fetchPrediction();
+  }, [activeLoc, rainfall]);
 
   const fetchOSMNetwork = async (lat, lng) => {
     setLoadingOSM(true);
     try {
       // 1. First, attempt to retrieve parsed graph/centrality details from backend
-      const response = await fetch(`http://localhost:8000/api/osm/road-network?lat=${lat}&lng=${lng}`);
+      const response = await fetch(`${API_URL}/api/osm/road-network?lat=${lat}&lng=${lng}`);
       if (!response.ok) throw new Error("Backend OSM query failed");
       const data = await response.json();
 
@@ -201,24 +226,9 @@ export default function SimulationPage() {
   const riskLevel = currentR > 0.70 ? 'STABLE' : currentR > 0.40 ? 'DEGRADED' : 'CRITICAL';
   const riskColor = currentR > 0.70 ? 'var(--c-green)' : currentR > 0.40 ? 'var(--c-amber)' : 'var(--c-red)';
 
-  // Helper to dynamically load jsPDF library from CDN
-  const loadJsPDF = () => {
-    return new Promise((resolve) => {
-      if (window.jspdf) {
-        resolve(window.jspdf);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      script.onload = () => resolve(window.jspdf);
-      document.head.appendChild(script);
-    });
-  };
-
   // Generate and download highly stylized PDF report
-  const downloadPDFReport = async () => {
-    const jspdfModule = await loadJsPDF();
-    const doc = new jspdfModule.jsPDF();
+  const downloadPDFReport = () => {
+    const doc = new jsPDF();
     
     // Page theme styling (Deep Navy block)
     doc.setFillColor(13, 22, 48);
@@ -319,10 +329,15 @@ export default function SimulationPage() {
         const n = CITY_NODES[id];
         if (!n) return;
         doc.setFont("helvetica", "normal");
-        doc.text(n.name, 15, y);
-        doc.text(n.bc.toFixed(3), 85, y);
-        doc.text(n.degree.toString(), 130, y);
-        doc.text(n.affected.toLocaleString(), 155, y);
+        const nodeName = n.name || 'Junction';
+        const nodeBc = typeof n.bc === 'number' ? n.bc : typeof n.betweenness === 'number' ? n.betweenness : 0.0;
+        const nodeDegree = n.degree !== undefined && n.degree !== null ? n.degree.toString() : '—';
+        const nodeAffected = typeof n.affected === 'number' ? n.affected.toLocaleString() : '—';
+        
+        doc.text(nodeName, 15, y);
+        doc.text(nodeBc.toFixed(3), 85, y);
+        doc.text(nodeDegree, 130, y);
+        doc.text(nodeAffected, 155, y);
         
         doc.line(15, y + 2, 195, y + 2);
         y += 8;
@@ -372,7 +387,7 @@ export default function SimulationPage() {
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash;
-      if (hash && hash.startsWith('#sim/')) {
+      if (hash && typeof hash === 'string' && hash.startsWith('#sim/')) {
         const parts = hash.replace('#sim/', '').split('&');
         const params = {};
         parts.forEach(p => {
@@ -391,7 +406,7 @@ export default function SimulationPage() {
     handleHash();
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+  }, [CITY_NODES.length]);
 
   const shareSimulation = () => {
     const nodesStr = disabledNodes.join(',');
@@ -432,7 +447,7 @@ export default function SimulationPage() {
 
     try {
       // 2. Fetch real simulation from FastAPI backend
-      const response = await fetch('http://localhost:8000/api/simulate', {
+      const response = await fetch(`${API_URL}/api/simulate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -754,7 +769,7 @@ export default function SimulationPage() {
                     customGeoJSON={customGeoJSON}
                   />
                 ) : (
-                  <CesiumView activeLoc={activeLoc} customNodes={customNodes} />
+                  <CesiumView activeLoc={activeLoc} customNodes={customNodes} activeGeoJSON={customGeoJSON || getShiftedGeoJSON(ROAD_GEOJSON)} />
                 )}
               </div>
               {showUncertainty && activeTab === '2d' && (
@@ -830,6 +845,57 @@ export default function SimulationPage() {
                   <span style={{ color: 'var(--c-green)', fontWeight: 600 }}>Active</span>
                 </div>
               </div>
+            </div>
+
+            {/* Predictive Rainfall Flood Risk Card */}
+            <div className="glass-panel" style={{ padding: 20, border: '1px solid rgba(0, 229, 255, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontWeight: 600 }}>Rainfall Predictive Model</span>
+                <span className="badge badge-amber" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>Poisson ML</span>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
+                  <span style={{ color: 'var(--c-text-faint)' }}>Rainfall Intensity:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--c-cyan)', fontWeight: 700 }}>{rainfall} mm</span>
+                </div>
+                <input
+                  type="range" min="10" max="200" step="5"
+                  value={rainfall} onChange={(e) => setRainfall(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--c-cyan)', cursor: 'pointer' }}
+                />
+              </div>
+
+              {floodPrediction && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.82rem', borderTop: '1px dashed var(--c-border)', paddingTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--c-text-faint)' }}>Collapse Prob:</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: floodPrediction.collapse_probability > 0.7 ? 'var(--c-red)' : floodPrediction.collapse_probability > 0.4 ? 'var(--c-amber)' : 'var(--c-green)' }}>
+                      {(floodPrediction.collapse_probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--c-text-faint)' }}>Nodes at Risk:</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{floodPrediction.critical_nodes_at_risk} / 143</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--c-text-faint)' }}>Est. Resilience:</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--c-cyan)', fontWeight: 700 }}>R = {floodPrediction.estimated_resilience.toFixed(3)}</span>
+                  </div>
+                  <div style={{
+                    marginTop: 6,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    fontSize: '0.73rem',
+                    fontFamily: 'var(--font-mono)',
+                    textAlign: 'center',
+                    background: floodPrediction.collapse_probability > 0.7 ? 'rgba(239, 68, 68, 0.1)' : floodPrediction.collapse_probability > 0.4 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                    color: floodPrediction.collapse_probability > 0.7 ? 'var(--c-red)' : floodPrediction.collapse_probability > 0.4 ? 'var(--c-amber)' : 'var(--c-green)',
+                    border: `1px solid ${floodPrediction.collapse_probability > 0.7 ? 'rgba(239, 68, 68, 0.25)' : floodPrediction.collapse_probability > 0.4 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`
+                  }}>
+                    {floodPrediction.recommendation}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Disabled node list */}
@@ -931,8 +997,8 @@ export default function SimulationPage() {
               <div className="glass-panel" style={{ padding:16, maxHeight:240, overflowY:'auto' }}>
                 <div style={{ fontFamily:'var(--font-mono)', fontSize:'0.62rem', color:'var(--c-text-faint)', marginBottom:8, letterSpacing:'0.1em' }}>SIMULATION LOG</div>
                 {simLog.map((l, i) => (
-                  <div key={i} style={{ fontFamily:'var(--font-mono)', fontSize:'0.7rem', color: l.msg.startsWith('✓') ? 'var(--c-green)' : 'var(--c-text-dim)', marginBottom:5, lineHeight:1.4 }}>
-                    <span style={{ color:'var(--c-text-faint)', marginRight:6 }}>{l.t}</span>{l.msg}
+                  <div key={i} style={{ fontFamily:'var(--font-mono)', fontSize:'0.7rem', color: l?.msg?.startsWith?.('✓') ? 'var(--c-green)' : 'var(--c-text-dim)', marginBottom:5, lineHeight:1.4 }}>
+                    <span style={{ color:'var(--c-text-faint)', marginRight:6 }}>{l?.t}</span>{l?.msg}
                   </div>
                 ))}
               </div>

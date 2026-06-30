@@ -1,8 +1,9 @@
 import React from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { getShiftedNodes, getShiftedGeoJSON, getActiveLocation } from '../utils/locationHelper';
 
-// Bengaluru road network (mock GeoJSON - in production, built from OSM + segmentation)
-const ROAD_GEOJSON = {
+export const ROAD_GEOJSON = {
   type: "FeatureCollection",
   features: [
     // Major arterials
@@ -85,14 +86,44 @@ function sanitizeGeoJSON(geoJSON) {
     .filter(feature => feature && feature.geometry)
     .map(feature => {
       const geom = feature.geometry;
-      if (geom.type === 'LineString') {
-        // Filter out any individual invalid coordinate points within the LineString
-        const cleanCoords = (geom.coordinates || []).filter(isValidCoord);
-        if (cleanCoords.length < 2) return null; // Drop degenerate lines
-        return {
-          ...feature,
-          geometry: { ...geom, coordinates: cleanCoords }
-        };
+      try {
+        if (geom.type === 'LineString') {
+          // Filter out any individual invalid coordinate points within the LineString
+          const cleanCoords = (geom.coordinates || []).filter(isValidCoord);
+          if (cleanCoords.length < 2) return null; // Drop degenerate lines
+          return {
+            ...feature,
+            geometry: { ...geom, coordinates: cleanCoords }
+          };
+        }
+        if (geom.type === 'MultiLineString') {
+          const cleanLines = (geom.coordinates || [])
+            .map(line => (line || []).filter(isValidCoord))
+            .filter(line => line.length >= 2);
+          if (cleanLines.length === 0) return null;
+          return {
+            ...feature,
+            geometry: { ...geom, coordinates: cleanLines }
+          };
+        }
+        if (geom.type === 'Polygon') {
+          const cleanRings = (geom.coordinates || [])
+            .map(ring => (ring || []).filter(isValidCoord))
+            .filter(ring => ring.length >= 3);
+          if (cleanRings.length === 0) return null;
+          return {
+            ...feature,
+            geometry: { ...geom, coordinates: cleanRings }
+          };
+        }
+        if (geom.type === 'Point') {
+          if (!isValidCoord(geom.coordinates)) return null;
+          return feature;
+        }
+        if (!Array.isArray(geom.coordinates)) return null;
+      } catch (e) {
+        console.error("Error sanitizing geometry:", e);
+        return null;
       }
       return feature;
     })
@@ -157,18 +188,8 @@ export default function CriticalityMap({ activeLoc, disabledNodes = [], showHeal
     if (!mapRef.current) return;
     let timer;
 
-    // Dynamically load Leaflet CSS
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-
     const initMap = () => {
-      if (!window.L || mapInstanceRef.current) return;
-      const L = window.L;
+      if (mapInstanceRef.current) return;
       const initialLoc = getActiveLocation();
 
       const map = L.map(mapRef.current, {
@@ -196,14 +217,7 @@ export default function CriticalityMap({ activeLoc, disabledNodes = [], showHeal
       }, 100);
     };
 
-    if (window.L) {
-      initMap();
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
-      document.head.appendChild(script);
-    }
+    initMap();
 
     return () => {
       if (timer) clearTimeout(timer);
@@ -222,7 +236,6 @@ export default function CriticalityMap({ activeLoc, disabledNodes = [], showHeal
   // Sync right map when splitMode is active
   React.useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
-    const L = window.L;
     const mapLeft = mapInstanceRef.current;
     let timerId;
 
@@ -289,182 +302,213 @@ export default function CriticalityMap({ activeLoc, disabledNodes = [], showHeal
   // Update layers when state changes
   React.useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
-    const L = window.L;
     const map = mapInstanceRef.current;
 
-    // Clear existing layers
-    if (layersRef.current.roads) map.removeLayer(layersRef.current.roads);
-    if (layersRef.current.nodes) map.removeLayer(layersRef.current.nodes);
-    if (layersRef.current.reroute) map.removeLayer(layersRef.current.reroute);
+    // Clear existing layers safely
+    if (layersRef.current.roads && map.hasLayer(layersRef.current.roads)) {
+      try { map.removeLayer(layersRef.current.roads); } catch (e) {}
+    }
+    if (layersRef.current.nodes && map.hasLayer(layersRef.current.nodes)) {
+      try { map.removeLayer(layersRef.current.nodes); } catch (e) {}
+    }
+    if (layersRef.current.reroute && map.hasLayer(layersRef.current.reroute)) {
+      try { map.removeLayer(layersRef.current.reroute); } catch (e) {}
+    }
 
     // ── Road criticality heatmap layer ──
-    const roadLayer = L.geoJSON(activeGeoJSON, {
-      filter: (feature) => {
-        if (feature.properties.broken && !showBroken) return false;
-        if (feature.properties.healed && !showHealed) return false;
-        return true;
-      },
-      style: (feature) => {
-        try {
-          const p = feature.properties || {};
-          const disabledRoad = disabledNodes.some(id => {
-            const node = activeNodes.find(n => n.id === id);
-            if (!node) return false;
-            const coords = feature.geometry?.coordinates;
-            if (!Array.isArray(coords)) return false;
-            return coords.some(pt => {
-              if (!Array.isArray(pt) || pt.length < 2) return false;
-              const [lng, lat] = pt;
-              if (typeof lng !== 'number' || typeof lat !== 'number') return false;
-              return Math.hypot(lat - node.lat, lng - node.lng) < 0.015;
+    let roadLayer = null;
+    try {
+      roadLayer = L.geoJSON(activeGeoJSON, {
+        filter: (feature) => {
+          if (feature.properties.broken && !showBroken) return false;
+          if (feature.properties.healed && !showHealed) return false;
+          return true;
+        },
+        style: (feature) => {
+          try {
+            const p = feature.properties || {};
+            const disabledRoad = disabledNodes.some(id => {
+              const node = activeNodes.find(n => n.id === id);
+              if (!node) return false;
+              const coords = feature.geometry?.coordinates;
+              if (!Array.isArray(coords)) return false;
+              // Flatten one level if it's nested (e.g. MultiLineString)
+              const flatCoords = feature.geometry.type === 'LineString' ? coords : coords.flat(1);
+              return flatCoords.some(pt => {
+                if (!Array.isArray(pt) || pt.length < 2) return false;
+                const [lng, lat] = pt;
+                if (typeof lng !== 'number' || typeof lat !== 'number') return false;
+                return Math.hypot(lat - node.lat, lng - node.lng) < 0.015;
+              });
             });
-          });
-          const betweenness = typeof p.betweenness === 'number' ? p.betweenness : 0.5;
-          return {
-            color: bcToColor(betweenness, disabledRoad, !!p.healed, !!p.broken),
-            weight: p.broken ? 1.5 : bcToWeight(betweenness),
-            opacity: p.broken ? 0.5 : disabledRoad ? 0.8 : 0.85,
-            dashArray: p.broken ? '6 8' : p.healed ? '4 4' : null,
-          };
-        } catch (err) {
-          console.error("Error in roadLayer style:", err);
-          return { color: '#10b981', weight: 2, opacity: 0.8 };
+            const betweenness = typeof p.betweenness === 'number' ? p.betweenness : 0.5;
+            return {
+              color: bcToColor(betweenness, disabledRoad, !!p.healed, !!p.broken),
+              weight: p.broken ? 1.5 : bcToWeight(betweenness),
+              opacity: p.broken ? 0.5 : disabledRoad ? 0.8 : 0.85,
+              dashArray: p.broken ? '6 8' : p.healed ? '4 4' : null,
+            };
+          } catch (err) {
+            console.error("Error in roadLayer style:", err);
+            return { color: '#10b981', weight: 2, opacity: 0.8 };
+          }
+        },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties;
+          layer.bindPopup(`
+            <div style="font-family: monospace; font-size: 12px; color: #e2e8f0; background: #0d1630; padding: 10px; border-radius: 6px; min-width: 180px;">
+              <div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">${p.name}</div>
+              <div style="color:#94a3b8;">Betweenness: <span style="color:#f59e0b;">${typeof p.betweenness === 'number' ? p.betweenness.toFixed(3) : 'N/A'}</span></div>
+              <div style="color:#94a3b8;">Type: ${p.type}</div>
+              ${p.broken ? '<div style="color:#f59e0b; margin-top:4px;">⚠ Occluded — healed by MST</div>' : ''}
+              ${p.healed ? '<div style="color:#a78bfa; margin-top:4px;">✓ MST-healed connector</div>' : ''}
+            </div>
+          `, { className: 'dark-popup' });
         }
-      },
-      onEachFeature: (feature, layer) => {
-        const p = feature.properties;
-        layer.bindPopup(`
-          <div style="font-family: monospace; font-size: 12px; color: #e2e8f0; background: #0d1630; padding: 10px; border-radius: 6px; min-width: 180px;">
-            <div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">${p.name}</div>
-            <div style="color:#94a3b8;">Betweenness: <span style="color:#f59e0b;">${typeof p.betweenness === 'number' ? p.betweenness.toFixed(3) : 'N/A'}</span></div>
-            <div style="color:#94a3b8;">Type: ${p.type}</div>
-            ${p.broken ? '<div style="color:#f59e0b; margin-top:4px;">⚠ Occluded — healed by MST</div>' : ''}
-            ${p.healed ? '<div style="color:#a78bfa; margin-top:4px;">✓ MST-healed connector</div>' : ''}
-          </div>
-        `, { className: 'dark-popup' });
-      }
-    }).addTo(map);
+      }).addTo(map);
+      layersRef.current.roads = roadLayer;
+    } catch (e) {
+      console.error("Error adding road layer:", e);
+    }
 
     // ── Gatekeeper Node markers ──
     const nodeLayer = L.layerGroup();
-    activeNodes.forEach(node => {
-      const isDisabled = disabledNodes.includes(node.id);
-      // Normalize all fields with safe defaults in case backend omits them
-      const bc = typeof node.bc === 'number' && isFinite(node.bc) ? node.bc : 0.3;
-      const lat = typeof node.lat === 'number' && !isNaN(node.lat) && isFinite(node.lat) ? node.lat : null;
-      const lng = typeof node.lng === 'number' && !isNaN(node.lng) && isFinite(node.lng) ? node.lng : null;
-      
-      // Discard invalid nodes completely rather than placing them at [0,0]
-      if (lat === null || lng === null) return;
+    try {
+      activeNodes.forEach(node => {
+        const isDisabled = disabledNodes.includes(node.id);
+        // Normalize all fields with safe defaults in case backend omits them
+        const bc = typeof node.bc === 'number' && isFinite(node.bc) ? node.bc : 0.3;
+        const lat = typeof node.lat === 'number' && !isNaN(node.lat) && isFinite(node.lat) ? node.lat : null;
+        const lng = typeof node.lng === 'number' && !isNaN(node.lng) && isFinite(node.lng) ? node.lng : null;
+        
+        // Discard invalid nodes completely rather than placing them at [0,0]
+        if (lat === null || lng === null) return;
 
-      const degree = node.degree ?? '—';
-      const risk = node.risk ?? 'UNKNOWN';
-      const name = node.name ?? 'Junction';
+        const degree = node.degree ?? '—';
+        const risk = node.risk ?? 'UNKNOWN';
+        const name = node.name ?? 'Junction';
 
-      const color = isDisabled ? '#ef4444' : bc >= 0.8 ? '#ef4444' : bc >= 0.6 ? '#f59e0b' : '#38bdf8';
-      const size = Math.max(6, 8 + bc * 10);
+        const color = isDisabled ? '#ef4444' : bc >= 0.8 ? '#ef4444' : bc >= 0.6 ? '#f59e0b' : '#38bdf8';
+        const size = Math.max(6, 8 + bc * 10);
 
-      const icon = L.divIcon({
-        className: '',
-        html: `
-          <div style="
-            width:${size}px; height:${size}px;
-            border-radius:50%;
-            background:${color};
-            border:2px solid ${isDisabled ? '#ff6b6b' : 'rgba(255,255,255,0.3)'};
-            box-shadow: 0 0 ${isDisabled ? 16 : 8}px ${color};
-            cursor:pointer;
-            ${isDisabled ? 'animation: pulse 1s infinite alternate;' : ''}
-          "></div>
-        `,
-        iconSize: [size, size],
-        iconAnchor: [size/2, size/2],
-      });
-
-      const marker = L.marker([lat, lng], { icon })
-        .bindPopup(`
-          <div style="font-family: monospace; font-size: 12px; color: #e2e8f0; background: #0d1630; padding: 12px; border-radius: 6px; min-width: 200px;">
-            <div style="font-weight:700; color:${color}; margin-bottom:8px;">${name}</div>
-            <div style="color:#94a3b8;">Coords: <span style="color:#38bdf8;">${lat.toFixed(4)}°, ${lng.toFixed(4)}°</span></div>
-            <div style="color:#94a3b8;">Betweenness: <span style="color:${color}; font-weight:600;">${bc.toFixed(3)}</span></div>
-            <div style="color:#94a3b8;">Degree: ${degree} connections</div>
-            <div style="color:#94a3b8;">Risk: <span style="color:${color};">${risk}</span></div>
-            ${isDisabled ? '<div style="color:#ef4444; margin-top:6px; font-weight:600;">🚫 DISABLED (simulated failure)</div>' : ''}
-          </div>
-        `, { className: 'dark-popup' });
-
-      if (onNodeToggle) {
-        marker.on('click', () => {
-          onNodeToggle(node.id);
+        const icon = L.divIcon({
+          className: '',
+          html: `
+            <div style="
+              width:${size}px; height:${size}px;
+              border-radius:50%;
+              background:${color};
+              border:2px solid ${isDisabled ? '#ff6b6b' : 'rgba(255,255,255,0.3)'};
+              box-shadow: 0 0 ${isDisabled ? 16 : 8}px ${color};
+              cursor:pointer;
+              ${isDisabled ? 'animation: pulse 1s infinite alternate;' : ''}
+            "></div>
+          `,
+          iconSize: [size, size],
+          iconAnchor: [size/2, size/2],
         });
-      }
 
-      marker.addTo(nodeLayer);
-    });
-    nodeLayer.addTo(map);
+        const marker = L.marker([lat, lng], { icon })
+          .bindPopup(`
+            <div style="font-family: monospace; font-size: 12px; color: #e2e8f0; background: #0d1630; padding: 12px; border-radius: 6px; min-width: 200px;">
+              <div style="font-weight:700; color:${color}; margin-bottom:8px;">${name}</div>
+              <div style="color:#94a3b8;">Coords: <span style="color:#38bdf8;">${lat.toFixed(4)}°, ${lng.toFixed(4)}°</span></div>
+              <div style="color:#94a3b8;">Betweenness: <span style="color:${color}; font-weight:600;">${bc.toFixed(3)}</span></div>
+              <div style="color:#94a3b8;">Degree: ${degree} connections</div>
+              <div style="color:#94a3b8;">Risk: <span style="color:${color};">${risk}</span></div>
+              ${isDisabled ? '<div style="color:#ef4444; margin-top:6px; font-weight:600;">🚫 DISABLED (simulated failure)</div>' : ''}
+            </div>
+          `, { className: 'dark-popup' });
+
+        if (onNodeToggle) {
+          marker.on('click', () => {
+            onNodeToggle(node.id);
+          });
+        }
+
+        marker.addTo(nodeLayer);
+      });
+      nodeLayer.addTo(map);
+      layersRef.current.nodes = nodeLayer;
+    } catch (e) {
+      console.error("Error adding node layer:", e);
+    }
 
     // ── Rerouting overlay ──
     if (showReroute) {
       const rerouteLayer = L.layerGroup();
-      const centerLat = loc.lat;
-      const centerLng = loc.lng;
+      try {
+        const centerLat = Number(loc.lat);
+        const centerLng = Number(loc.lng);
 
-      const routes = [
-        {
-          id: 1,
-          coords: [
-            [centerLat + 0.01, centerLng - 0.02],
-            [centerLat + 0.02, centerLng],
-            [centerLat + 0.01, centerLng + 0.02]
-          ],
-          delay: 12
-        },
-        {
-          id: 2,
-          coords: [
-            [centerLat - 0.01, centerLng - 0.02],
-            [centerLat - 0.02, centerLng],
-            [centerLat - 0.01, centerLng + 0.02]
-          ],
-          delay: 25
-        },
-        {
-          id: 3,
-          coords: [
-            [centerLat - 0.02, centerLng + 0.01],
-            [centerLat, centerLng + 0.03],
-            [centerLat + 0.02, centerLng + 0.01]
-          ],
-          delay: 18
-        },
-        {
-          id: 4,
-          coords: [
-            [centerLat - 0.02, centerLng - 0.01],
-            [centerLat, centerLng - 0.03],
-            [centerLat + 0.02, centerLng - 0.01]
-          ],
-          delay: 8
+        if (!isNaN(centerLat) && isFinite(centerLat) && !isNaN(centerLng) && isFinite(centerLng)) {
+          const routes = [
+            {
+              id: 1,
+              coords: [
+                [centerLat + 0.01, centerLng - 0.02],
+                [centerLat + 0.02, centerLng],
+                [centerLat + 0.01, centerLng + 0.02]
+              ],
+              delay: 12
+            },
+            {
+              id: 2,
+              coords: [
+                [centerLat - 0.01, centerLng - 0.02],
+                [centerLat - 0.02, centerLng],
+                [centerLat - 0.01, centerLng + 0.02]
+              ],
+              delay: 25
+            },
+            {
+              id: 3,
+              coords: [
+                [centerLat - 0.02, centerLng + 0.01],
+                [centerLat, centerLng + 0.03],
+                [centerLat + 0.02, centerLng + 0.01]
+              ],
+              delay: 18
+            },
+            {
+              id: 4,
+              coords: [
+                [centerLat - 0.02, centerLng - 0.01],
+                [centerLat, centerLng - 0.03],
+                [centerLat + 0.02, centerLng - 0.01]
+              ],
+              delay: 8
+            }
+          ];
+
+          routes.forEach(route => {
+            try {
+              const isValid = route.coords.every(([lat, lng]) => 
+                typeof lat === 'number' && !isNaN(lat) && isFinite(lat) &&
+                typeof lng === 'number' && !isNaN(lng) && isFinite(lng)
+              );
+              if (isValid && route.coords.length >= 2) {
+                L.polyline(
+                  route.coords,
+                  { color: '#10b981', weight: 3, dashArray: '8 6', opacity: 0.8 }
+                ).bindPopup(`
+                  <div style="font-family: monospace; font-size: 11px; color: #e2e8f0; background: #0d1630; padding: 8px; border-radius: 6px;">
+                    Alt Route ${route.id} — Est. +${route.delay} min
+                  </div>
+                `, { className: 'dark-popup' })
+                .addTo(rerouteLayer);
+              }
+            } catch (innerErr) {
+              console.error("Error adding route polyline:", innerErr);
+            }
+          });
+
+          rerouteLayer.addTo(map);
+          layersRef.current.reroute = rerouteLayer;
         }
-      ];
-
-      routes.forEach(route => {
-        const isValid = route.coords.every(([lat, lng]) => typeof lat === 'number' && !isNaN(lat) && typeof lng === 'number' && !isNaN(lng));
-        if (isValid && route.coords.length >= 2) {
-          L.polyline(
-            route.coords,
-            { color: '#10b981', weight: 3, dashArray: '8 6', opacity: 0.8 }
-          ).bindPopup(`
-            <div style="font-family: monospace; font-size: 11px; color: #e2e8f0; background: #0d1630; padding: 8px; border-radius: 6px;">
-              Alt Route ${route.id} — Est. +${route.delay} min
-            </div>
-          `, { className: 'dark-popup' })
-          .addTo(rerouteLayer);
-        }
-      });
-
-      rerouteLayer.addTo(map);
-      layersRef.current.reroute = rerouteLayer;
+      } catch (e) {
+        console.error("Error adding rerouting layer:", e);
+      }
     }
 
     layersRef.current.roads = roadLayer;
@@ -488,6 +532,23 @@ export default function CriticalityMap({ activeLoc, disabledNodes = [], showHeal
       `;
       document.head.appendChild(style);
     }
+
+    const activeLayers = layersRef.current;
+    return () => {
+      // Safely remove layers on cleanup
+      const m = mapInstanceRef.current;
+      if (m) {
+        if (activeLayers.roads && m.hasLayer(activeLayers.roads)) {
+          try { m.removeLayer(activeLayers.roads); } catch (e) {}
+        }
+        if (activeLayers.nodes && m.hasLayer(activeLayers.nodes)) {
+          try { m.removeLayer(activeLayers.nodes); } catch (e) {}
+        }
+        if (activeLayers.reroute && m.hasLayer(activeLayers.reroute)) {
+          try { m.removeLayer(activeLayers.reroute); } catch (e) {}
+        }
+      }
+    };
   }, [mapReady, disabledNodes, showHealed, showBroken, showReroute, onNodeToggle, activeGeoJSON, activeNodes, activeLoc, loc.lat, loc.lng]);
 
   return (
