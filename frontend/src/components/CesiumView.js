@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getShiftedNodes, getActiveLocation } from '../utils/locationHelper';
-import { Viewer, Entity, CameraFlyTo, GeoJsonDataSource } from 'resium';
-import { Cartesian3, Color } from 'cesium';
 
 // Set base URL to CDN so Webpack doesn't need copy plugin configurations!
 window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.115.0/Build/Cesium/';
