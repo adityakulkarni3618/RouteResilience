@@ -6740,22 +6740,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════ ORBITAL SENSORS GALLERY (SLIDER) ═══════════════ */}
-      <section style={{ padding: '40px 0 80px', position: 'relative' }}>
-        <div className="container">
-          <div style={{ marginBottom: 40, textAlign: 'center' }}>
-            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>INTEGRATED OBSERVATION SYSTEMS</div>
-            <h2 className="section-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Satellite & Sensor Payload
-            </h2>
-            <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1.05rem', color: 'var(--c-text-dim)' }}>
-              Sub-meter optical satellites and multispectral telemetry supporting the NNRMS mobility mandate.
-            </p>
-          </div>
-          <SensorGallerySlider />
-        </div>
-      </section>
-
       {/* ═══════════════ PIPELINE PHASES ═══════════════ */}
       <section style={{ padding: '120px 0', position: 'relative' }}>
         <div className="container">
@@ -6824,6 +6808,22 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ ORBITAL SENSORS GALLERY (SLIDER) ═══════════════ */}
+      <section style={{ padding: '80px 0 80px', position: 'relative', borderTop: '1px solid var(--c-border)' }}>
+        <div className="container">
+          <div style={{ marginBottom: 50, textAlign: 'center' }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>INTEGRATED OBSERVATION SYSTEMS</div>
+            <h2 className="section-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Satellite & Sensor Payload
+            </h2>
+            <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1.05rem', color: 'var(--c-text-dim)' }}>
+              Sub-meter optical satellites and multispectral telemetry supporting the NNRMS mobility mandate.
+            </p>
+          </div>
+          <SensorGallerySlider />
         </div>
       </section>
 
