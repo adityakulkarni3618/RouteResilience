@@ -74,24 +74,16 @@ export default function Navigation() {
         </Link>
 
         {/* Desktop Links */}
-        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="hide-mobile nav-links-wrap">
           {NAV_LINKS.map(link => (
             <Link
               key={link.path}
               to={link.path}
+              className={`nav-link-item ${location.pathname === link.path ? 'active' : ''}`}
               style={{
-                padding: '8px 16px',
-                borderRadius: 6,
-                textDecoration: 'none',
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 600,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
                 color: location.pathname === link.path ? 'var(--c-orange)' : 'var(--c-text-dim)',
                 background: location.pathname === link.path ? 'rgba(255,138,55,0.1)' : 'transparent',
                 border: location.pathname === link.path ? '1px solid rgba(255,138,55,0.2)' : '1px solid transparent',
-                transition: 'all 0.25s ease',
               }}
             >
               {link.label}
@@ -100,14 +92,14 @@ export default function Navigation() {
         </div>
 
         {/* CTA + Status */}
-        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="hide-mobile nav-cta-wrap" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div className="status-dot online" style={{ background: 'var(--c-green)', boxShadow: '0 0 8px var(--c-green)' }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--c-text-dim)', letterSpacing: '0.05em' }}>
               ORBIT LIVE
             </span>
           </div>
-          <Link to="/dashboard" className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.78rem' }}>
+          <Link to="/dashboard" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.72rem' }}>
             PORTAL CONSOLE
           </Link>
         </div>

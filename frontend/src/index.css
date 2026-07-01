@@ -751,3 +751,42 @@ input:focus, select:focus, textarea:focus {
   color: var(--c-cyan) !important;
 }
 
+
+/* ============================================
+   NAVIGATION RESPONSIVE LAYOUT POLISH
+   ============================================ */
+.nav-links-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-link-item {
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.76rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 1240px) {
+  .nav-links-wrap {
+    gap: 3px;
+  }
+  .nav-link-item {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+  .nav-cta-wrap {
+    gap: 8px !important;
+  }
+  /* Hide the redundant Console button on mid-size laptop screens to prevent collision */
+  .nav-cta-wrap .btn-primary {
+    display: none !important;
+  }
+}
+
