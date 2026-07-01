@@ -3,9 +3,8 @@
 
 > **HackHazards '26 · Namespace** — Problem Statement 4 · Infrastructure, Mobility & Smart Systems
 
-[![Live Demo](https://img.shields.io/badge/Demo-Live-38bdf8?style=flat-square)](http://localhost:3000)
-[![Backend API](https://img.shields.io/badge/API-FastAPI-10b981?style=flat-square)](http://localhost:8000/docs)
-[![License](https://img.shields.io/badge/License-MIT-a78bfa?style=flat-square)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Demo-LIVE-38bdf8)](https://route-resilience-tau.vercel.app)
+[![API Docs](https://img.shields.io/badge/API-Swagger-10b981)](https://routeresilience-1.onrender.com/docs)
 
 ---
 
