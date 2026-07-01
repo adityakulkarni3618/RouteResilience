@@ -685,3 +685,54 @@ nav.scrolled {
   text-align: right;
 }
 
+
+/* ============================================
+   EXTRA UI POLISH & MICRO-INTERACTIONS
+   ============================================ */
+
+/* Navbar links hover state */
+nav a:not(.btn-primary):hover {
+  color: var(--c-orange) !important;
+  text-shadow: 0 0 10px var(--c-orange-glow);
+}
+
+/* Button active compression clicks */
+.btn-primary:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 2px 8px var(--c-orange-glow);
+}
+
+.btn-secondary:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 2px 8px var(--c-cyan-glow);
+}
+
+/* Interactive elements general hover & focus transitions */
+input, select, textarea {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--c-cyan) !important;
+  box-shadow: 0 0 12px var(--c-cyan-glow) !important;
+  outline: none;
+}
+
+/* Table row interactive styling */
+.data-table tr {
+  transition: all 0.2s ease;
+}
+
+.data-table tr:hover td {
+  background: rgba(0, 229, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Table header hover styling */
+.data-table th {
+  transition: color 0.2s ease;
+}
+.data-table th:hover {
+  color: var(--c-cyan) !important;
+}
+
