@@ -82,14 +82,13 @@ function SpaceParticles() {
 
 function SatellitePassTimer() {
   const [timeLeft, setTimeLeft] = useState(0);
+  const [coords, setCoords] = useState({ lat: 12.9716, lng: 77.5946, alt: 508.82 });
+
   useEffect(() => {
     const calculateTime = () => {
-      // Sentinel-2 revisit cycle is exactly 5 days
-      // Cartosat-3 is sun-synchronous, ~11 day revisit
-      // Use a real next-pass calculation based on today's date
       const now = new Date();
       const sentinel2RevistMs = 5 * 24 * 60 * 60 * 1000;
-      const lastPass = new Date('2026-06-27T06:30:00Z'); // known pass
+      const lastPass = new Date('2026-06-27T06:30:00Z');
       const nextPass = new Date(lastPass.getTime() + 
         Math.ceil((now - lastPass) / sentinel2RevistMs) * sentinel2RevistMs);
       const msLeft = nextPass - now;
@@ -97,7 +96,6 @@ function SatellitePassTimer() {
     };
 
     setTimeLeft(calculateTime());
-
     const timer = setInterval(() => {
       setTimeLeft(calculateTime());
     }, 1000);
@@ -105,23 +103,80 @@ function SatellitePassTimer() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCoords(prev => {
+        let newLat = prev.lat + 0.0003;
+        let newLng = prev.lng - 0.0002;
+        if (newLat > 15) newLat = 12.0;
+        if (newLng < 75) newLng = 79.0;
+        return {
+          lat: Number(newLat.toFixed(4)),
+          lng: Number(newLng.toFixed(4)),
+          alt: Number((prev.alt + (Math.random() - 0.5) * 0.06).toFixed(2))
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const hrs = Math.floor(timeLeft / 3600);
   const mins = Math.floor((timeLeft % 3600) / 60);
   const secs = timeLeft % 60;
 
   return (
-    <div className="bah-segment-bar" style={{ maxWidth: 520, margin: '0 auto 40px', gridTemplateColumns: '1.2fr repeat(3, 1fr)' }}>
-      <div className="bah-segment-cell label" style={{ color: 'var(--c-orange)', fontWeight: 800 }}>
-        NEXT SATELLITE PASS
+    <div className="glass-panel" style={{
+      maxWidth: 550,
+      margin: '0 0 36px',
+      padding: '16px 20px',
+      background: 'rgba(6, 10, 19, 0.7)',
+      borderColor: 'rgba(0, 229, 255, 0.25)',
+      borderRadius: '8px',
+      display: 'grid',
+      gridTemplateColumns: '1.1fr 0.9fr',
+      gap: 16,
+      alignItems: 'center',
+      boxShadow: '0 4px 20px rgba(0, 229, 255, 0.05)',
+      fontFamily: 'var(--font-mono)'
+    }}>
+      {/* Left Pane: Next Pass Timer */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderRight: '1px solid rgba(0, 229, 255, 0.15)', paddingRight: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="status-dot online" style={{ width: 6, height: 6, background: 'var(--c-orange)', boxShadow: '0 0 6px var(--c-orange)' }} />
+          <span style={{ fontSize: '0.62rem', color: 'var(--c-orange)', fontWeight: 800, letterSpacing: '0.05em' }}>
+            ORBITAL COUNTDOWN
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--c-text)', textShadow: '0 0 10px rgba(255,255,255,0.1)' }}>{String(hrs).padStart(2, '0')}</span>
+            <span style={{ fontSize: '0.52rem', color: 'var(--c-text-faint)', fontWeight: 700 }}>HRS</span>
+          </div>
+          <span style={{ color: 'var(--c-text-faint)', fontWeight: 800 }}>:</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--c-text)', textShadow: '0 0 10px rgba(255,255,255,0.1)' }}>{String(mins).padStart(2, '0')}</span>
+            <span style={{ fontSize: '0.52rem', color: 'var(--c-text-faint)', fontWeight: 700 }}>MIN</span>
+          </div>
+          <span style={{ color: 'var(--c-text-faint)', fontWeight: 800 }}>:</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--c-cyan)', textShadow: '0 0 10px var(--c-cyan-glow)' }}>{String(secs).padStart(2, '0')}</span>
+            <span style={{ fontSize: '0.52rem', color: 'var(--c-cyan-dim)', fontWeight: 700 }}>SEC</span>
+          </div>
+        </div>
+        <div style={{ fontSize: '0.58rem', color: 'var(--c-text-dim)', marginTop: 4, letterSpacing: '0.02em' }}>
+          ETA target intercept (Sentinel-2)
+        </div>
       </div>
-      <div className="bah-segment-cell accent">
-        {String(hrs).padStart(2, '0')} <span style={{ fontSize: '0.62rem', color: 'var(--c-text-faint)' }}>HRS</span>
-      </div>
-      <div className="bah-segment-cell accent">
-        {String(mins).padStart(2, '0')} <span style={{ fontSize: '0.62rem', color: 'var(--c-text-faint)' }}>MIN</span>
-      </div>
-      <div className="bah-segment-cell accent">
-        {String(secs).padStart(2, '0')} <span style={{ fontSize: '0.62rem', color: 'var(--c-text-faint)' }}>SEC</span>
+
+      {/* Right Pane: Live Telemetry Coordinates */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.62rem', color: 'var(--c-text-dim)' }}>
+        <div style={{ color: 'var(--c-cyan)', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
+          LIVE FEED: CARTOSAT-3
+        </div>
+        <div>LAT: <span style={{ color: '#ffffff' }}>{coords.lat.toFixed(4)}° N</span></div>
+        <div>LNG: <span style={{ color: '#ffffff' }}>{coords.lng.toFixed(4)}° E</span></div>
+        <div>ALT: <span style={{ color: '#ffffff' }}>{coords.alt.toFixed(2)} km</span></div>
+        <div>VEL: <span style={{ color: '#ffffff' }}>7.562 km/s</span></div>
       </div>
     </div>
   );
@@ -573,6 +628,22 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ═══════════════ ORBITAL SENSORS GALLERY (SLIDER) ═══════════════ */}
+      <section style={{ padding: '40px 0 80px', position: 'relative' }}>
+        <div className="container">
+          <div style={{ marginBottom: 40, textAlign: 'center' }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>INTEGRATED OBSERVATION SYSTEMS</div>
+            <h2 className="section-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Satellite & Sensor Payload
+            </h2>
+            <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1.05rem', color: 'var(--c-text-dim)' }}>
+              Sub-meter optical satellites and multispectral telemetry supporting the NNRMS mobility mandate.
+            </p>
+          </div>
+          <SensorGallerySlider />
+        </div>
+      </section>
+
       {/* ═══════════════ PIPELINE PHASES ═══════════════ */}
       <section style={{ padding: '120px 0', position: 'relative' }}>
         <div className="container">
@@ -641,22 +712,6 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ ORBITAL SENSORS GALLERY (SLIDER) ═══════════════ */}
-      <section style={{ padding: '80px 0 80px', position: 'relative', borderTop: '1px solid var(--c-border)' }}>
-        <div className="container">
-          <div style={{ marginBottom: 50, textAlign: 'center' }}>
-            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>INTEGRATED OBSERVATION SYSTEMS</div>
-            <h2 className="section-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Satellite & Sensor Payload
-            </h2>
-            <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1.05rem', color: 'var(--c-text-dim)' }}>
-              Sub-meter optical satellites and multispectral telemetry supporting the NNRMS mobility mandate.
-            </p>
-          </div>
-          <SensorGallerySlider />
         </div>
       </section>
 
