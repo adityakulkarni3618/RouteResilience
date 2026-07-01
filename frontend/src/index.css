@@ -563,7 +563,7 @@ nav.scrolled {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1080px) {
   .container { padding: 0 16px; }
   .hide-mobile { display: none !important; }
   .show-mobile { display: block !important; }
