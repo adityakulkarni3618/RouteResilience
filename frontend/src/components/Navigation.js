@@ -59,6 +59,7 @@ export default function Navigation() {
               fontSize: '0.95rem',
               color: 'var(--c-text)',
               letterSpacing: '0.05em',
+              whiteSpace: 'nowrap',
             }}>
               RouteResilience
             </div>
@@ -67,6 +68,7 @@ export default function Navigation() {
               fontSize: '0.58rem',
               color: 'var(--c-text-faint)',
               letterSpacing: '0.12em',
+              whiteSpace: 'nowrap',
             }}>
               ANTARIKSH GEOSPATIAL LAB
             </div>
