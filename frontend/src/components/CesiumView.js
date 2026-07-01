@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getShiftedNodes, getActiveLocation } from '../utils/locationHelper';
-
-// Set base URL to CDN so Webpack doesn't need copy plugin configurations!
-window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.115.0/Build/Cesium/';
 
 const CITY_NODES = [
   { id: 0, name: 'Silk Board Junction',  bc: 0.91, degree: 12, affected: 125000, lat: 12.9177, lng: 77.6228, road_type: 'arterial' },
@@ -15,23 +12,27 @@ const CITY_NODES = [
   { id: 7, name: 'Yelahanka',            bc: 0.48, degree: 5,  affected: 31000,  lat: 13.1007, lng: 77.5963, road_type: 'local' },
 ];
 
-const createPinSvg = (color) => {
-  return `data:image/svg+xml;utf8,` + encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-      <path d="M16 3C10.5 3 6 7.5 6 13c0 5.5 10 16 10 16s10-10.5 10-16c0-5.5-4.5-10-10-10z" fill="${color}" stroke="#ffffff" stroke-width="2"/>
-      <circle cx="16" cy="13" r="4" fill="#000000"/>
-    </svg>
-  `);
-};
-
 export default function CesiumView({ activeLoc, customNodes, activeGeoJSON }) {
+  const containerRef = useRef(null);
+  const viewerRef = useRef(null);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const loc = activeLoc || getActiveLocation();
   const activeNodes = customNodes || getShiftedNodes(CITY_NODES);
 
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [hasWebGL, setHasWebGL] = useState(true);
-
   useEffect(() => {
+    if (!window.Cesium) {
+      console.error("Cesium is not loaded via CDN.");
+      return;
+    }
+
+    // Set Cesium Ion token
+    window.Cesium.Ion.defaultAccessToken = window.CESIUM_ION_TOKEN || '';
+
+    // Set base URL to CDN
+    window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.115.0/Build/Cesium/';
+
     // Dynamically load Cesium CSS from CDN
     if (!document.getElementById('cesium-css')) {
       const link = document.createElement('link');
@@ -41,115 +42,147 @@ export default function CesiumView({ activeLoc, customNodes, activeGeoJSON }) {
       document.head.appendChild(link);
     }
 
-    // Verify WebGL Support
-    try {
-      const canvas = document.createElement('canvas');
-      const support = !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-      setHasWebGL(support);
-    } catch (e) {
-      setHasWebGL(false);
-    }
+    // Initialize Viewer
+    const viewer = new window.Cesium.Viewer(containerRef.current, {
+      selectionIndicator: false,
+      infoBox: false,
+      navigationHelpButton: false,
+      geocoder: false,
+      timeline: false,
+      animation: false,
+      baseLayerPicker: false,
+    });
+    viewerRef.current = viewer;
+    setLoading(false);
+
+    // Click handler for entity selection
+    const handler = new window.Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((click) => {
+      const pickedObject = viewer.scene.pick(click.position);
+      if (window.Cesium.defined(pickedObject) && pickedObject.id) {
+        const entity = pickedObject.id;
+        if (entity.properties) {
+          const nodeProps = {};
+          entity.properties.propertyNames.forEach(name => {
+            const propVal = entity.properties[name];
+            nodeProps[name] = (propVal && typeof propVal.getValue === 'function') ? propVal.getValue() : propVal;
+          });
+          setSelectedNode(nodeProps);
+        }
+      } else {
+        setSelectedNode(null);
+      }
+    }, window.Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    return () => {
+      handler.destroy();
+      if (viewerRef.current) {
+        viewerRef.current.destroy();
+        viewerRef.current = null;
+      }
+    };
   }, []);
 
-  if (!hasWebGL) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: 440,
-        background: 'var(--c-void)',
-        color: 'var(--c-text-dim)',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.9rem',
-      }}>
-        3D view requires WebGL — switch to Map tab
-      </div>
-    );
-  }
+  // Update position / fly to location when activeLoc changes
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !window.Cesium) return;
+
+    viewer.camera.flyTo({
+      destination: window.Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat, 15000),
+      duration: 0,
+    });
+  }, [loc.lat, loc.lng]);
+
+  // Update nodes and GeoJSON when they change
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !window.Cesium) return;
+
+    // Clear previous entities and data sources
+    viewer.entities.removeAll();
+    viewer.dataSources.removeAll();
+
+    // Add node pins
+    activeNodes.forEach((node) => {
+      const bcVal = typeof node.bc === 'number' ? node.bc : typeof node.betweenness === 'number' ? node.betweenness : 0;
+      let colorVal = window.Cesium.Color.CYAN;
+      if (bcVal > 0.7) colorVal = window.Cesium.Color.RED;
+      else if (bcVal > 0.4) colorVal = window.Cesium.Color.ORANGE;
+
+      const lat = typeof node.lat === 'number' && !isNaN(node.lat) && isFinite(node.lat) ? node.lat : null;
+      const lng = typeof node.lng === 'number' && !isNaN(node.lng) && isFinite(node.lng) ? node.lng : null;
+      if (lat === null || lng === null) return;
+
+      viewer.entities.add({
+        name: node.name,
+        position: window.Cesium.Cesium3DTileset ? window.Cesium.Cartesian3.fromDegrees(lng, lat, 20) : window.Cesium.Cartesian3.fromDegrees(lng, lat, 20),
+        point: {
+          pixelSize: 12,
+          color: colorVal,
+          outlineColor: window.Cesium.Color.WHITE,
+          outlineWidth: 2,
+        },
+        properties: node,
+      });
+    });
+
+    // Load GeoJSON
+    if (activeGeoJSON) {
+      window.Cesium.GeoJsonDataSource.load(activeGeoJSON).then((dataSource) => {
+        viewer.dataSources.add(dataSource);
+        const entities = dataSource.entities.values;
+        entities.forEach((entity) => {
+          const feature = entity.properties;
+          if (!feature) return;
+
+          const getValue = (propName) => {
+            const val = feature[propName];
+            return (val && typeof val.getValue === 'function') ? val.getValue() : val;
+          };
+
+          const betweenness = getValue('betweenness') ?? 0.5;
+          const isBroken = !!getValue('broken');
+          const isHealed = !!getValue('healed');
+
+          let colorVal = window.Cesium.Color.CYAN;
+          if (isBroken) {
+            colorVal = window.Cesium.Color.RED;
+          } else if (isHealed) {
+            colorVal = window.Cesium.Color.fromCssString('#a78bfa');
+          } else if (betweenness > 0.7) {
+            colorVal = window.Cesium.Color.RED;
+          } else if (betweenness > 0.4) {
+            colorVal = window.Cesium.Color.ORANGE;
+          }
+
+          if (entity.polyline) {
+            entity.polyline.material = colorVal;
+            entity.polyline.width = isBroken ? 2.0 : 3.5;
+          }
+        });
+      });
+    }
+  }, [activeNodes, activeGeoJSON]);
 
   return (
-    <div style={{ position: 'relative', height: '100%', minHeight: 440, borderRadius: 12, overflow: 'hidden', background: 'var(--c-void)' }}>
-      <Viewer
-        full
-        selectionIndicator={false}
-        infoBox={false}
-        navigationHelpButton={false}
-        geocoder={false}
-        timeline={false}
-        animation={false}
-        baseLayerPicker={false}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <CameraFlyTo destination={Cartesian3.fromDegrees(loc.lng, loc.lat, 15000)} duration={0} />
-
-        {activeNodes.map((node) => {
-          // Color coding: red if BC > 0.7, amber if BC > 0.4, cyan otherwise
-          let color = '#38bdf8';
-          const bcVal = typeof node.bc === 'number' ? node.bc : 0;
-          if (bcVal > 0.7) color = '#ef4444';
-          else if (bcVal > 0.4) color = '#f59e0b';
-
-          const lat = typeof node.lat === 'number' && !isNaN(node.lat) && isFinite(node.lat) ? node.lat : null;
-          const lng = typeof node.lng === 'number' && !isNaN(node.lng) && isFinite(node.lng) ? node.lng : null;
-          if (lat === null || lng === null) return null;
-
-          return (
-            <Entity
-              key={node.id}
-              name={node.name}
-              position={Cartesian3.fromDegrees(lng, lat, 20)}
-              billboard={{
-                image: createPinSvg(color),
-                width: 32,
-                height: 32,
-              }}
-              onClick={() => setSelectedNode(node)}
-            />
-          );
-        })}
-
-        {activeGeoJSON && (
-          <GeoJsonDataSource
-            data={activeGeoJSON}
-            onLoad={(dataSource) => {
-              const entities = dataSource.entities.values;
-              entities.forEach((entity) => {
-                const feature = entity.properties;
-                if (!feature) return;
-
-                const getProp = (propName) => {
-                  const val = feature[propName];
-                  return (val && typeof val.getValue === 'function') ? val.getValue() : val;
-                };
-
-                const betweenness = getProp('betweenness') ?? 0.5;
-                const isBroken = !!getProp('broken');
-                const isHealed = !!getProp('healed');
-
-                let colorVal = '#38bdf8';
-                if (isBroken) {
-                  colorVal = '#ef4444';
-                } else if (isHealed) {
-                  colorVal = '#a78bfa';
-                } else if (betweenness > 0.7) {
-                  colorVal = '#ef4444';
-                } else if (betweenness > 0.4) {
-                  colorVal = '#f59e0b';
-                }
-
-                const color = Color.fromCssString(colorVal);
-
-                if (entity.polyline) {
-                  entity.polyline.material = color;
-                  entity.polyline.width = isBroken ? 2.0 : 3.5;
-                }
-              });
-            }}
-          />
-        )}
-      </Viewer>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 440, borderRadius: 12, overflow: 'hidden', background: 'var(--c-void)' }}>
+      {loading && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--c-text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem',
+          background: 'rgba(2, 4, 10, 0.85)'
+        }}>
+          <div style={{
+            width: 40, height: 40, border: '2px solid rgba(0, 229, 255, 0.2)',
+            borderTopColor: 'var(--c-cyan)', borderRadius: '50%',
+            animation: 'spin-slow 1s linear infinite', marginBottom: 12
+          }} />
+          Initializing 3D Globe View...
+        </div>
+      )}
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
       {/* Info Popup Overlay */}
       {selectedNode && (
@@ -190,7 +223,7 @@ export default function CesiumView({ activeLoc, customNodes, activeGeoJSON }) {
             <div>
               <span style={{ color: 'var(--c-text-dim)' }}>Betweenness: </span>
               <span style={{ color: selectedNode.bc > 0.7 ? 'var(--c-red)' : selectedNode.bc > 0.4 ? 'var(--c-amber)' : 'var(--c-cyan)', fontWeight: 'bold' }}>
-                {typeof selectedNode.bc === 'number' ? selectedNode.bc.toFixed(3) : 'N/A'}
+                {typeof selectedNode.bc === 'number' ? selectedNode.bc.toFixed(3) : typeof selectedNode.betweenness === 'number' ? selectedNode.betweenness.toFixed(3) : 'N/A'}
               </span>
             </div>
             <div>
