@@ -103,31 +103,43 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${API_URL.replace('http://', '').replace('https://', '')}/ws/live-telemetry`);
-    ws.onopen = () => {
-      setTelemetry(prev => ({ ...prev, connected: true }));
-    };
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setTelemetry({
-          active_nodes: data.active_nodes,
-          active_edges: data.active_edges,
-          resilience_index: data.resilience_index,
-          connected: true,
-          alerts: data.alerts
-        });
-      } catch (err) {
-        console.error("Telemetry websocket parse error:", err);
-      }
-    };
-    ws.onerror = () => {
+    let ws;
+    try {
+      const wsProtocol = API_URL.startsWith('https') ? 'wss://' : 'ws://';
+      const cleanUrl = API_URL.replace('http://', '').replace('https://', '');
+      ws = new WebSocket(`${wsProtocol}${cleanUrl}/ws/live-telemetry`);
+      
+      ws.onopen = () => {
+        setTelemetry(prev => ({ ...prev, connected: true }));
+      };
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setTelemetry({
+            active_nodes: data.active_nodes,
+            active_edges: data.active_edges,
+            resilience_index: data.resilience_index,
+            connected: true,
+            alerts: data.alerts
+          });
+        } catch (err) {
+          console.error("Telemetry websocket parse error:", err);
+        }
+      };
+      ws.onerror = () => {
+        setTelemetry(prev => ({ ...prev, connected: false }));
+      };
+      ws.onclose = () => {
+        setTelemetry(prev => ({ ...prev, connected: false }));
+      };
+    } catch (err) {
+      console.error("Failed to initialize telemetry WebSocket:", err);
       setTelemetry(prev => ({ ...prev, connected: false }));
+    }
+    
+    return () => {
+      if (ws) ws.close();
     };
-    ws.onclose = () => {
-      setTelemetry(prev => ({ ...prev, connected: false }));
-    };
-    return () => ws.close();
   }, []);
 
   const metrics = [
