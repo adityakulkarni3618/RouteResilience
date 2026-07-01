@@ -390,7 +390,7 @@ export default function LandingPage() {
           </div>
 
           {/* BAH-style Segment Info Bar (Event Details banner) */}
-          <div className="bah-segment-bar" style={{ marginTop: 80 }}>
+          <div className="bah-segment-bar landing-segment-bar" style={{ marginTop: 80 }}>
             <div className="bah-segment-cell">
               <span style={{ fontSize: '0.72rem', color: 'var(--c-orange)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>NNRMS SCHEME</span>
               <strong style={{ marginTop: 6, fontSize: '0.95rem', fontFamily: 'var(--font-display)', fontWeight: 700 }}>ISRO STANDARD</strong>

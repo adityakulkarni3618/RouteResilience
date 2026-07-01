@@ -3690,11 +3690,26 @@ nav.scrolled {
 }
 
 /* ============================================
-   RESPONSIVE
+   RESPONSIVE & DESKTOP OVERRIDES
    ============================================ */
+.show-mobile {
+  display: none !important;
+}
+
+.landing-segment-bar {
+  grid-template-columns: repeat(4, 1fr) 1.8fr !important;
+}
+
+@media (max-width: 992px) {
+  .landing-segment-bar {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  }
+}
+
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
   .hide-mobile { display: none !important; }
+  .show-mobile { display: block !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6538,7 +6553,7 @@ export default function LandingPage() {
           </div>
 
           {/* BAH-style Segment Info Bar (Event Details banner) */}
-          <div className="bah-segment-bar" style={{ marginTop: 80 }}>
+          <div className="bah-segment-bar landing-segment-bar" style={{ marginTop: 80 }}>
             <div className="bah-segment-cell">
               <span style={{ fontSize: '0.72rem', color: 'var(--c-orange)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>NNRMS SCHEME</span>
               <strong style={{ marginTop: 6, fontSize: '0.95rem', fontFamily: 'var(--font-display)', fontWeight: 700 }}>ISRO STANDARD</strong>
