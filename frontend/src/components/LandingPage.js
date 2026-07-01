@@ -206,6 +206,164 @@ function AnimatedCounter({ target, duration = 1500 }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
+function SensorGallerySlider() {
+  const slides = [
+    {
+      title: "Cartosat-3 Observation System",
+      subtitle: "Sub-meter High-Resolution Optical Sensor",
+      desc: "Cartosat-3 is ISRO's state-of-the-art Earth observation satellite. It provides the primary sub-meter panchromatic and multispectral imagery used by our Swin Transformer model to extract fine-grained road coordinates and detect minor canopy shadowing.",
+      specs: [
+        { label: "Spatial Resolution", value: "0.28m PAN / 1.12m MS" },
+        { label: "Orbit Type", value: "Sun-Synchronous Polar" },
+        { label: "Altitude", value: "509 km" },
+        { label: "Revisit Cycle", value: "11 Days" }
+      ],
+      img: "/images/cartosat.png",
+      tag: "ISRO SENSOR"
+    },
+    {
+      title: "Sentinel-2 Multi-Spectral Feed",
+      subtitle: "10-meter Global Coverage & NDVI Mapping",
+      desc: "Sentinel-2 delivers high-revisit multi-spectral bands. We utilize its infrared and red-edge spectral bands to compute real-time Normalized Difference Vegetation Index (NDVI) maps, helping our topological model estimate canopy occlusion density.",
+      specs: [
+        { label: "Spectral Bands", value: "13 Bands (VNIR to SWIR)" },
+        { label: "Resolution", value: "10m / 20m / 60m" },
+        { label: "Revisit Time", value: "5 Days" },
+        { label: "Coverage", value: "Global (56°S to 84°N)" }
+      ],
+      img: "/images/sentinel.png",
+      tag: "ESA OBSERVATORY"
+    },
+    {
+      title: "ISRO NNRMS Command Framework",
+      subtitle: "National Natural Resources Management System",
+      desc: "Aligned with NNRMS guidelines, this portal acts as a command console mapping critical vulnerability metrics. It merges raw satellite observations with graph algorithms to identify gatekeepers and simulate failure scenarios under rain and disaster events.",
+      specs: [
+        { label: "Scheme Mandate", value: "NNRMS PS-4 Infrastructure" },
+        { label: "Focus", value: "Disaster Mitigation & Rerouting" },
+        { label: "Graph Size", value: "12,847 nodes / 18,234 edges" },
+        { label: "Baselines", value: "OpenStreetMap Benchmarks" }
+      ],
+      img: "/images/command.png",
+      tag: "NNRMS INTEGRATION"
+    }
+  ];
+
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const slide = slides[activeIndex];
+
+  return (
+    <div className="glass-panel" style={{
+      maxWidth: 1200,
+      margin: '0 auto 80px',
+      padding: 32,
+      background: 'rgba(6, 10, 19, 0.75)',
+      borderColor: 'var(--c-border-bright)',
+      boxShadow: 'var(--shadow-glow)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Background cyber grid lines */}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+        backgroundImage: 'linear-gradient(rgba(0, 229, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
+        pointerEvents: 'none'
+      }} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: 40, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+        {/* Left Side: Image with Scanning Shader */}
+        <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--c-border)', height: 360 }}>
+          <img src={slide.img} alt={slide.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          
+          {/* Laser scanning line overlay */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '3px',
+            background: 'linear-gradient(90deg, transparent, var(--c-cyan), transparent)',
+            boxShadow: '0 0 10px var(--c-cyan)',
+            animation: 'scan-line 4s linear infinite',
+            pointerEvents: 'none'
+          }} />
+
+          {/* Tag Overlay */}
+          <span className="badge badge-cyan" style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(2, 4, 10, 0.8)', border: '1px solid var(--c-cyan)', fontSize: '0.62rem' }}>
+            {slide.tag}
+          </span>
+        </div>
+
+        {/* Right Side: Description */}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', padding: '10px 0' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--c-orange)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+              {slide.subtitle}
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--c-text)', marginBottom: 16, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+              {slide.title}
+            </h3>
+            <p style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+              {slide.desc}
+            </p>
+
+            {/* Specifications Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+              {slide.specs.map(spec => (
+                <div key={spec.label} style={{ padding: '8px 12px', background: 'rgba(2, 4, 10, 0.4)', border: '1px solid var(--c-border)', borderRadius: 6 }}>
+                  <div style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--c-text-faint)', textTransform: 'uppercase' }}>{spec.label}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--c-text)', fontWeight: 600, marginTop: 4 }}>{spec.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Controls Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--c-border)', paddingTop: 16 }}>
+            {/* Indicators */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveIndex(idx)}
+                  style={{
+                    width: 28, height: 6, borderRadius: 3,
+                    background: activeIndex === idx ? 'var(--c-cyan)' : 'var(--c-border-bright)',
+                    border: 'none', cursor: 'pointer', transition: 'all 0.3s'
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Navigation buttons */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setActiveIndex(prev => (prev - 1 + slides.length) % slides.length)}
+                className="btn-secondary"
+                style={{ padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem' }}
+              >
+                ◀ PREV
+              </button>
+              <button
+                onClick={() => setActiveIndex(prev => (prev + 1) % slides.length)}
+                className="btn-secondary"
+                style={{ padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem' }}
+              >
+                NEXT ▶
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
     <div style={{ paddingTop: 0 }}>
@@ -412,6 +570,22 @@ export default function LandingPage() {
             </Link>
           </div>
 
+        </div>
+      </section>
+
+      {/* ═══════════════ ORBITAL SENSORS GALLERY (SLIDER) ═══════════════ */}
+      <section style={{ padding: '40px 0 80px', position: 'relative' }}>
+        <div className="container">
+          <div style={{ marginBottom: 40, textAlign: 'center' }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>INTEGRATED OBSERVATION SYSTEMS</div>
+            <h2 className="section-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Satellite & Sensor Payload
+            </h2>
+            <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1.05rem', color: 'var(--c-text-dim)' }}>
+              Sub-meter optical satellites and multispectral telemetry supporting the NNRMS mobility mandate.
+            </p>
+          </div>
+          <SensorGallerySlider />
         </div>
       </section>
 
