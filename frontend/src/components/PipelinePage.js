@@ -5,18 +5,18 @@ const PIPELINE_STEPS = [
   {
     id: 'ingest',
     phase: 'Phase I',
-    title: 'Satellite Data Ingestion',
-    subtitle: 'Multi-source EO Data Pipeline',
+    title: 'Aerial & Road Network Extraction',
+    subtitle: 'Multi-source Aerial & Road Network Pipeline',
     color: 'var(--c-cyan)',
     details: [
-      { label: 'Sources', value: 'Sentinel-2 (10m), Resourcesat LISS-IV (5.8m), Cartosat-3' },
-      { label: 'Preprocessing', value: 'Tile generation (512×512), NDVI contrast, histogram equalization' },
-      { label: 'Augmentation', value: 'Albumentations: flip, rotate, elastic, brightness, shadow simulation' },
+      { label: 'Overview', value: 'Extract road networks from any aerial imagery source — drones, municipal cameras, or satellite — using our occlusion-robust AI pipeline that handles tree canopy, shadows, and urban clutter.' },
+      { label: 'Sources', value: 'Drones, municipal cameras, or satellite imagery' },
+      { label: 'Preprocessing', value: 'Tile generation (512×512), contrast enhancement, and histogram equalization' },
       { label: 'Occlusion Simulation', value: 'Synthetic canopy, shadow, vehicle masks added to training set' },
     ],
     code: `# Preprocessing pipeline
 import rasterio, albumentations as A
-
+ 
 transform = A.Compose([
     A.RandomSizedCrop((400, 512), 512, 512),
     A.HorizontalFlip(p=0.5),
@@ -73,7 +73,7 @@ transform = A.Compose([
     ],
     code: `from skimage.morphology import skeletonize
 import networkx as nx
-
+ 
 def mask_to_graph(binary_mask):
     # Morphological thinning
     skeleton = skeletonize(binary_mask)
@@ -104,7 +104,7 @@ def mask_to_graph(binary_mask):
       { label: 'Union-Find', value: 'Disjoint Set tracks connected components; MST merges them greedily' },
     ],
     code: `from scipy.spatial import KDTree
-
+ 
 def heal_topology(G, max_gap=25, max_angle=30):
     endpoints = [n for n in G.nodes 
                  if G.degree(n) == 1]
@@ -139,7 +139,7 @@ def heal_topology(G, max_gap=25, max_angle=30):
     ],
     code: `import networkx as nx
 from multiprocessing import Pool
-
+ 
 def compute_centrality(G):
     # Weighted betweenness centrality
     bc = nx.betweenness_centrality(
@@ -198,14 +198,14 @@ def compute_centrality(G):
   {
     id: 'dashboard',
     phase: 'Phase IV',
-    title: 'Interactive Dashboard',
-    subtitle: 'Leaflet.js + Streamlit Visualization',
+    title: 'Smart City Decision Support',
+    subtitle: 'Interactive Command & Control Hub',
     color: 'var(--c-green)',
     details: [
+      { label: 'Decision Support', value: 'Generate actionable reports for city planners, emergency services, and infrastructure teams with resilience scores, critical node maps, and disaster scenario outcomes.' },
       { label: 'Heatmap Layer', value: 'Road segments colored by criticality weight — "weakest links" visible at a glance' },
       { label: 'Simulation Toggle', value: 'Click-to-disable node; instant rerouting + travel time delta displayed' },
       { label: 'Export', value: 'GeoJSON road graph, PNG criticality heatmap, PDF resilience report' },
-      { label: 'Stack', value: 'React + Leaflet.js (frontend), FastAPI (backend), NetworkX (graph engine)' },
     ],
     code: `// Leaflet criticality heatmap layer
 const criticalityLayer = L.geoJSON(roadGraph, {
@@ -223,7 +223,7 @@ const criticalityLayer = L.geoJSON(roadGraph, {
     });
   }
 });
-
+ 
 function centralityToColor(c) {
   if (c > 0.8) return '#ef4444'; // critical
   if (c > 0.5) return '#f59e0b'; // high
@@ -233,7 +233,7 @@ function centralityToColor(c) {
 ];
 
 const LOG_LINES = [
-  "[Phase I]  Loading Cartosat-3 tile: bengaluru_sector_7.tif",
+  "[Phase I]  Loading aerial imagery tile: bengaluru_sector_7.tif",
   "[Phase I]  CLAHE contrast enhancement applied",
   "[Phase I]  Tiling: 512\u00d7512 with 50% overlap \u2192 16 tiles",
   "[Phase I]  U-Net++ + Swin-T inference: IoU=0.942, Dice=0.937",
@@ -247,7 +247,7 @@ const LOG_LINES = [
   "[Phase III] 143 gatekeeper nodes identified (top 1%)",
   "[Phase III] Resilience Index baseline: R = 0.891",
   "[Phase III] Stress test: 10 ablations simulated",
-  "[Phase IV]  Dashboard ready \u2014 serving on port 3000",
+  "[Phase IV]  Smart City Command Ready \u2014 serving on port 3000",
   "[DONE]  Pipeline complete in 4m 32s"
 ];
 
@@ -544,7 +544,7 @@ export default function PipelinePage() {
   }, [activeStep]);
 
   const LAYERS_3D = [
-    { stepIndex: 0, title: "Satellite Ingestion", badge: "INGEST", color: "var(--c-cyan)", glow: "rgba(56, 189, 248, 0.25)", tz: -75, footer: "Sentinel-2 / Cartosat-3" },
+    { stepIndex: 0, title: "Aerial & Road Extraction", badge: "INGEST", color: "var(--c-cyan)", glow: "rgba(56, 189, 248, 0.25)", tz: -75, footer: "Drone / Camera / Satellite" },
     { stepIndex: 1, title: "Road Segmentation", badge: "SWIN-T", color: "var(--c-purple)", glow: "rgba(167, 139, 250, 0.25)", tz: -25, footer: "U-Net++ Sigmoid Mask" },
     { stepIndex: 3, title: "Topological Healing", badge: "MST", color: "var(--c-amber)", glow: "rgba(245, 158, 11, 0.25)", tz: 25, footer: "Union-Find Gap Repair" },
     { stepIndex: 4, title: "Criticality Analysis", badge: "BRANDES", color: "var(--c-red)", glow: "rgba(239, 68, 68, 0.25)", tz: 75, footer: "Betweenness Heatmap" },
@@ -604,7 +604,7 @@ export default function PipelinePage() {
               End-to-End Pipeline
             </h1>
             <p style={{ color: 'var(--c-text-dim)', maxWidth: 580, lineHeight: 1.7 }}>
-              From raw satellite EO data to an actionable urban resilience intelligence platform — 
+              From raw aerial & road imagery to an actionable urban resilience intelligence platform — 
               seven interconnected stages across four phases. Hover over the layers and click to jump directly to any step!
             </p>
           </div>

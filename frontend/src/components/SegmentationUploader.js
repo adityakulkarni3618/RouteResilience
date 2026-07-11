@@ -167,7 +167,7 @@ export default function SegmentationUploader({ onLocationChange }) {
   const reset = () => { setFile(null); setStage('idle'); setProgress(0); setResults(null); };
 
   const VIZ_TABS = [
-    { id: 'input', label: 'Input Tile', desc: 'Raw satellite image with occlusions' },
+    { id: 'input', label: 'Input Tile', desc: 'Raw aerial image with occlusions' },
     { id: 'output', label: 'Predicted Mask', desc: 'Transformer segmentation output' },
     { id: 'healed', label: 'MST Healed', desc: 'Graph after topological healing' },
     { id: 'gt', label: 'OSM Ground Truth', desc: 'Reference annotation' },
@@ -343,12 +343,12 @@ export default function SegmentationUploader({ onLocationChange }) {
           }}
         >
           <input ref={inputRef} type="file" accept=".tif,.tiff,.png,.jpg,.jpeg" style={{ display: 'none' }} onChange={onFileChange} />
-          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🛰️</div>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📷</div>
           <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 6, color: 'var(--c-text)' }}>
-            Drop satellite tile here
+            Drop aerial road imagery here
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--c-text-faint)', marginBottom: 16 }}>
-            Supports GeoTIFF, PNG, JPEG · Sentinel-2, Resourcesat LISS-IV, Cartosat-3
+            Supports GeoTIFF, PNG, JPEG · drone, municipal camera, or satellite
           </div>
           <div className="btn-secondary" style={{ display: 'inline-flex', cursor: 'pointer' }}>
             Browse Files

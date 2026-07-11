@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getShiftedNodes, getActiveLocation } from '../utils/locationHelper';
+import { getShiftedNodes } from '../utils/locationHelper';
 import { API_URL } from '../config';
 
 const CITY_NODES_BASE = [
@@ -14,7 +14,6 @@ const CITY_NODES_BASE = [
 ];
 
 export default function CascadeSimulator() {
-  const activeLoc = getActiveLocation();
   const CITY_NODES = getShiftedNodes(CITY_NODES_BASE);
 
   const [triggerNodeId, setTriggerNodeId] = useState(0);
@@ -71,12 +70,12 @@ export default function CascadeSimulator() {
         
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <div className="section-eyebrow">Cascade Simulator</div>
+          <div className="section-eyebrow">Emergency Cascade Analysis</div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 8 }}>
-            Iterative Cascade Collapse
+            Emergency Cascade Analysis
           </h1>
           <p style={{ color: 'var(--c-text-dim)', fontSize: '1rem' }}>
-            Simulate how localized node failures propagate through the {activeLoc.name.split(',')[0]} road network. Nodes fail if their betweenness exceeds the dropping threshold at each depth.
+            See how a single road closure cascades through the city network, helping emergency planners pre-position resources and identify vulnerable corridors.
           </p>
         </div>
 

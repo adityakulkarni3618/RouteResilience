@@ -8,10 +8,10 @@ import CesiumView from './CesiumView';
 import { API_URL } from '../config';
 
 const SCENARIOS = [
-  { id:'flood',        label:'Flash Flood',      icon:'🌊', color:'#38bdf8', desc:'Node + all adjacent edges removed', mult:1.0 },
-  { id:'accident',     label:'Major Accident',   icon:'🚧', color:'#f59e0b', desc:'Edge weights ×10 (near-impassable)', mult:0.45 },
-  { id:'construction', label:'Road Construction',icon:'🏗️', color:'#a78bfa', desc:'Node degraded — reduced capacity',   mult:0.60 },
-  { id:'collapse',     label:'Bridge Collapse',  icon:'⚡', color:'#ef4444', desc:'Full node + neighbour edge removal', mult:1.0 },
+  { id:'flood',        label:'Flash Flood Emergency',      icon:'🌊', color:'#38bdf8', desc:'Node + all adjacent edges removed', mult:1.0 },
+  { id:'earthquake',   label:'Seismic Event',              icon:'🏚️', color:'#f59e0b', desc:'Ground rupture and structural damage', mult:0.85 },
+  { id:'collapse',     label:'Bridge/Overpass Closure',    icon:'🌉', color:'#ef4444', desc:'Full node + neighbour edge removal', mult:1.0 },
+  { id:'evacuation',   label:'Mass Event Evacuation',      icon:'🚶', color:'#a78bfa', desc:'High localized demand & evacuation flow',   mult:0.60 },
 ];
 
 const CITY_NODES_BASE = [
@@ -58,6 +58,44 @@ export default function SimulationPage() {
   const [customLat, setCustomLat] = useState('');
   const [customLng, setCustomLng] = useState('');
   const [showCustom, setShowCustom] = useState(false);
+
+  // Global City Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  const searchCity = async (query) => {
+    if (!query || query.length < 3) return;
+    setSearching(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&featuretype=city`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      setSearchResults(data.map(r => ({
+        name: r.display_name.split(',')[0],
+        fullName: r.display_name,
+        lat: parseFloat(r.lat),
+        lng: parseFloat(r.lon),
+      })));
+    } catch (e) {
+      console.error('Search failed:', e);
+    }
+    setSearching(false);
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (searchQuery.length >= 3) {
+        searchCity(searchQuery);
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   const navigate = useNavigate();
   const [showUncertainty, setShowUncertainty] = useState(false);
@@ -242,7 +280,7 @@ export default function SimulationPage() {
     
     doc.setFontSize(9);
     doc.setTextColor(148, 163, 184); // Dim
-    doc.text("HackHazards '26 · PS-4 Mandate (ISRO/NNRMS)", 15, 26);
+    doc.text("Smart City Platform · Capability Assessment", 15, 26);
     
     // Date & Time
     const now = new Date();
@@ -378,7 +416,7 @@ export default function SimulationPage() {
     doc.rect(0, 280, 210, 17, 'F');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text("CONFIDENTIAL PLANNERS REPORT · HACKHAZARDS '26 · URBAN ROAD MOBILITY MITIGATION", 15, 291);
+    doc.text("CONFIDENTIAL PLANNERS REPORT · SMART CITY · URBAN ROAD MOBILITY MITIGATION", 15, 291);
     
     doc.save(`RouteResilience_Simulation_Report_${scenario}.pdf`);
   };
@@ -547,8 +585,7 @@ export default function SimulationPage() {
               Failure Simulation
             </h1>
             <p style={{ color:'var(--c-text-dim)', maxWidth:560 }}>
-              Click gatekeeper nodes on the Leaflet map, choose a disaster scenario, and run the Resilience Index simulation.
-              Green dashed lines show computed alternative routes.
+              Simulate how your city road network responds to emergency scenarios. Identify critical failure points before they happen and pre-plan evacuation and emergency service routes.
             </p>
           </div>
           {/* Live R badge */}
@@ -561,13 +598,91 @@ export default function SimulationPage() {
 
         {/* Target Location / City selector bar */}
         <div className="glass-panel" style={{
-          padding: '16px 20px', marginBottom: 24,
+          padding: '24px 20px', marginBottom: 24,
           background: 'rgba(13,22,48,0.7)',
           border: '1px solid var(--c-border-bright)',
         }}>
+          {/* Global City Search */}
+          <div style={{ marginBottom: 20, position: 'relative' }}>
+            <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--c-cyan)', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 8 }}>
+              🔍 ANALYZE ANY CITY WORLDWIDE
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input
+                  type="text"
+                  placeholder="Search any city worldwide..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    fontSize: '1rem',
+                    padding: '12px 16px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                    borderRadius: '8px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                {searching && (
+                  <div style={{
+                    position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+                    width: 16, height: 16, border: '2px solid rgba(0, 229, 255, 0.2)',
+                    borderTopColor: 'var(--c-cyan)', borderRadius: '50%',
+                    animation: 'spin-slow 1s linear infinite'
+                  }} />
+                )}
+              </div>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="glass-panel" style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                background: 'rgba(6, 10, 19, 0.98)', border: '1px solid var(--c-cyan)',
+                maxHeight: 250, overflowY: 'auto', borderRadius: 8, marginTop: 4, padding: 8
+              }}>
+                {searchResults.map((result, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      const newLoc = {
+                        name: result.name,
+                        lat: result.lat,
+                        lng: result.lng,
+                        key: 'search-' + idx,
+                        nodes: [
+                          'Central Crossing', 'Expressway Bridge', 'Metro Flyover', 'Transit Hub',
+                          'Industrial Gate', 'Canal Way', 'Ring Junction', 'Suburban Link'
+                        ]
+                      };
+                      setActiveLoc(newLoc);
+                      setActiveLocation(newLoc);
+                      setSearchResults([]);
+                      setSearchQuery('');
+                      setDisabledNodes([]);
+                    }}
+                    style={{
+                      padding: '10px 14px', cursor: 'pointer', color: 'white',
+                      borderBottom: idx < searchResults.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      fontSize: '0.88rem'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(0, 229, 255, 0.1)'}
+                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                  >
+                    {result.fullName}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: '0.68rem', color: 'var(--c-text-faint)', marginTop: 6, fontFamily: 'var(--font-mono)' }}>
+              Powered by OpenStreetMap — covers 190+ countries
+            </div>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: showCustom ? 12 : 0 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--c-cyan)', letterSpacing: '0.05em', fontWeight: 600 }}>
-              SIMULATION REGION (GEOSPATIAL COORDINATES):
+              OR SELECT PRESET REGION:
             </span>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {CITIES.map(c => (

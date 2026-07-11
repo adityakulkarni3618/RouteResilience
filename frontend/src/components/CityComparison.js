@@ -75,10 +75,10 @@ export default function CityComparison() {
             <div>
               <div className="section-eyebrow">Multi-City Intelligence</div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--c-text)', marginTop: 4 }}>
-                Global Urban Road Network Resilience Comparison
+                Smart City Readiness Index
               </h2>
               <p style={{ color: 'var(--c-text-dim)', fontSize: '0.85rem', marginTop: 6 }}>
-                Topological resilience index R, critical node density, and MST healing efficiency compared across five major global cities.
+                Compare infrastructure resilience across cities to benchmark smart city readiness and prioritize improvement investments.
               </p>
             </div>
 

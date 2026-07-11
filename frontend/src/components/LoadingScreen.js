@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const BOOT_LINES = [
   '> Initializing RouteResilience Engine v3.0...',
   '> Loading U-Net++ + Swin Transformer V2 model...',
-  '> Connecting to satellite feed [ISRO/Cartosat-3 · Sentinel-2]...',
+  '> Connecting to aerial and municipal telemetry feeds...',
   '> Building road topology graph (N=12,847 nodes, E=18,234 edges)...',
   '> Running MST topological healing — connectivity +371%...',
   '> Computing betweenness centrality [Brandes O(VE)]...',

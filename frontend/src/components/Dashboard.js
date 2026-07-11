@@ -107,7 +107,7 @@ export default function Dashboard() {
     try {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsHost = API_URL.replace('https://', '').replace('http://', '');
-      ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/live-telemetry`);
+      const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/live-telemetry`);
       
       ws.onopen = () => {
         setTelemetry(prev => ({ ...prev, connected: true }));
@@ -180,7 +180,7 @@ export default function Dashboard() {
   }, [activeTab, resilienceData]);
 
   const [processingLog, setProcessingLog] = useState([
-    { t:'14:32:01', msg:'Sentinel-2 tile loaded: bengaluru_13N_tile_042', type:'info' },
+    { t:'14:32:01', msg:'Aerial road imagery loaded: bengaluru_13N_sector_042', type:'info' },
     { t:'14:32:03', msg:'Occlusion mask: 34.2% canopy cover detected',    type:'warn' },
     { t:'14:32:08', msg:'Transformer inference complete — 2847 road pixels',type:'info' },
     { t:'14:32:11', msg:'Skeletonization: 1-px centerlines extracted',     type:'info' },
@@ -209,6 +209,7 @@ export default function Dashboard() {
 
   const TABS = [
     { id:'overview',    label:'Overview' },
+    { id:'city-services', label:'City Services' },
     { id:'map',         label:'Criticality Map' },
     { id:'training',    label:'Training' },
     { id:'centrality',  label:'Centrality' },
@@ -230,7 +231,7 @@ export default function Dashboard() {
               Intelligence Dashboard
             </h1>
             <p style={{ color:'var(--c-text-dim)', fontSize:'0.9rem', marginTop:8 }}>
-              Bengaluru Urban Mobility Graph · Live telemetry monitoring via ISRO Cartosat-3
+              Bengaluru Urban Mobility Graph · Live telemetry monitoring via smart city sensor network
             </p>
           </div>
           <div style={{ display:'flex', gap:12 }}>
@@ -255,8 +256,8 @@ export default function Dashboard() {
                 {telemetry.connected ? 'TELEMETRY CONNECTED' : 'TELEMETRY DISCONNECTED'}
               </span>
             </div>
-            <div style={{ padding:'8px 14px', background:'rgba(255,138,55,0.08)', border:'1px solid rgba(255,138,55,0.3)', borderRadius:8, fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--c-orange)', fontWeight: 600 }}>
-              SENSOR: CARTOSAT-3A
+            <div style={{ padding:'8px 14px', background:'rgba(0,229,255,0.08)', border:'1px solid rgba(0,229,255,0.3)', borderRadius:8, fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--c-cyan)', fontWeight: 600 }}>
+              SENSOR: MUNICIPAL IoT
             </div>
           </div>
         </div>
@@ -334,6 +335,44 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* ══════════════════ TAB: CITY SERVICES ══════════════════ */}
+        {activeTab==='city-services' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24, marginBottom: 40 }}>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚑</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8, color: 'var(--c-text)' }}>Emergency Response</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--c-green)', marginBottom: 8 }}>4.2 min saved</div>
+              <div style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                Average emergency vehicle reroute time saved per incident using optimized alternate path computation
+              </div>
+            </div>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🏙️</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8, color: 'var(--c-text)' }}>Municipal Planning</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--c-cyan)', marginBottom: 8 }}>143 bottlenecks</div>
+              <div style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                Critical road nodes flagged for infrastructure review and priority investment in the Bengaluru network
+              </div>
+            </div>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🌊</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8, color: 'var(--c-text)' }}>Flood Preparedness</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--c-orange)', marginBottom: 8 }}>8 corridors</div>
+              <div style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                High-risk road corridors identified for monsoon season with pre-positioned emergency resource recommendations
+              </div>
+            </div>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚦</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 8, color: 'var(--c-text)' }}>Traffic Optimization</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--c-green)', marginBottom: 8 }}>23% reduction</div>
+              <div style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                Estimated urban congestion reduction via smart rerouting around identified network bottlenecks
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ══════════════════ TAB: OVERVIEW ══════════════════ */}
         {activeTab==='overview' && (
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
@@ -355,7 +394,7 @@ export default function Dashboard() {
             {/* Processing Log / Telemetry Console */}
             <div className="cyber-card" style={{ padding:24, border: '1px solid rgba(255, 138, 55, 0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:16, borderBottom: '1px solid var(--c-border)', paddingBottom: 10 }}>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'0.9rem', color:'var(--c-orange)', letterSpacing:'0.05em' }}>ORBITAL TELEMETRY LOG</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'0.9rem', color:'var(--c-orange)', letterSpacing:'0.05em' }}>MUNICIPAL TELEMETRY LOG</div>
                 <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.65rem', color:'var(--c-text-faint)' }}>SYS.CHECK // OK</span>
               </div>
               
@@ -636,9 +675,9 @@ export default function Dashboard() {
         {activeTab==='upload' && (
           <div>
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontWeight:600, fontSize:'1.1rem', marginBottom:6 }}>Upload Satellite Tile</div>
+              <div style={{ fontWeight:600, fontSize:'1.1rem', marginBottom:6 }}>Upload Aerial Road Imagery</div>
               <p style={{ color:'var(--c-text-faint)', fontSize:'0.88rem', lineHeight:1.6 }}>
-                Upload a GeoTIFF tile (Sentinel-2, Resourcesat LISS-IV, or Cartosat-3) to run the full 
+                Upload an aerial imagery tile (drone, municipal camera, or satellite) to run the full 
                 segmentation + graph reconstruction pipeline. Results include segmentation masks, 
                 graph stats, and terrain generalisation comparison.
               </p>

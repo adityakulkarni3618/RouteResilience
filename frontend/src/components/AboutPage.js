@@ -15,9 +15,9 @@ const DATASETS = [
   { name: 'DeepGlobe Road Extraction', role: 'Fine-tuning + evaluation', type: 'Ground Truth' },
   { name: 'OpenSatMap', role: 'Multi-terrain generalisation', type: 'Ground Truth' },
   { name: 'OpenStreetMap (OSM)', role: 'Reference annotations & benchmarking', type: 'Vector' },
-  { name: 'Sentinel-2 (10m)', role: 'Open EO feed', type: 'Satellite' },
-  { name: 'Resourcesat LISS-IV (5.8m)', role: 'ISRO feed — open access', type: 'Satellite' },
-  { name: 'Cartosat-3', role: 'Provided during hackathon', type: 'Satellite' },
+  { name: 'Aerial & Drone Surveys', role: 'High-resolution imagery feed', type: 'Aerial' },
+  { name: 'Municipal Camera Networks', role: 'CCTV video & traffic telemetry', type: 'Sensor' },
+  { name: 'IoT Telemetry Data', role: 'Flow rates & environmental readings', type: 'Sensor' },
 ];
 
 export default function AboutPage() {
@@ -27,15 +27,46 @@ export default function AboutPage() {
 
         {/* Header */}
         <div style={{ marginBottom: 64 }}>
-          <div className="section-eyebrow">HackHazards '26 · Namespace</div>
+          <div className="section-eyebrow">Smart City Intelligence Platform</div>
           <h1 style={{ fontSize: '2.6rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16 }}>
             About RouteResilience
           </h1>
           <p style={{ color: 'var(--c-text-dim)', maxWidth: 640, lineHeight: 1.75, fontSize: '1.05rem' }}>
-            Problem Statement 4: Route Resilience — Occlusion-Robust Road Extraction &amp; Graph-Theoretic 
-            Criticality Analysis for Urban Mobility. Built for ISRO's NNRMS mandate on Cartosat and 
-            Resourcesat LISS-4 satellite imagery.
+            RouteResilience is an AI-powered smart city platform that extracts road networks from aerial imagery, 
+            analyzes critical infrastructure vulnerabilities using graph theory, and enables city planners and 
+            emergency services to simulate disaster scenarios and optimize urban mobility in real time.
           </p>
+        </div>
+
+        {/* Use Cases Section */}
+        <div style={{ marginBottom: 60 }}>
+          <div style={{ marginBottom: 28 }}>
+            <div className="section-eyebrow">Platform Applications</div>
+            <h2 className="section-title" style={{ fontSize: '1.8rem' }}>Smart City Use Cases</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🏙️</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 8 }}>Municipal Planning</h3>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                Help city planners identify critical road bottlenecks before building new infrastructure.
+              </p>
+            </div>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🚑</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 8 }}>Emergency Services</h3>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                Enable ambulance and fire services to find optimal routes even when primary roads fail.
+              </p>
+            </div>
+            <div className="glass-panel" style={{ padding: 24 }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🌊</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 8 }}>Climate Resilience</h3>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                Simulate flood and earthquake impact on road networks before disaster strikes.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Problem Statement Summary */}
@@ -47,7 +78,7 @@ export default function AboutPage() {
             The Dual Challenge: Fragmentation & Stagnation
           </h2>
           <p style={{ color: 'var(--c-text-dim)', lineHeight: 1.8, marginBottom: 16 }}>
-            Standard satellite-based road extraction fails due to <strong style={{ color: 'var(--c-amber)' }}>"spectral blindness"</strong> — 
+            Standard aerial-based road extraction fails due to <strong style={{ color: 'var(--c-amber)' }}>"spectral blindness"</strong> — 
             tree canopies, building shadows, and cloud cover create broken masks that are useless for real-world 
             disaster response or traffic simulation because they lack topological connectivity.
           </p>
@@ -58,7 +89,7 @@ export default function AboutPage() {
             urban collapse scenarios.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 20 }}>
-            <span className="badge badge-cyan">MeitY GIS Urban Planning</span>
+            <span className="badge badge-cyan">GIS Urban Planning</span>
             <span className="badge badge-amber">Disaster Response</span>
             <span className="badge badge-green">Traffic Simulation</span>
             <span className="badge badge-cyan">Infrastructure Mapping</span>
@@ -68,7 +99,7 @@ export default function AboutPage() {
         {/* Evaluation Metrics */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 28 }}>
-            <div className="section-eyebrow">Judging Criteria</div>
+            <div className="section-eyebrow">Platform Evaluation</div>
             <h2 className="section-title" style={{ fontSize: '1.8rem' }}>Evaluation Metrics</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
@@ -115,7 +146,7 @@ export default function AboutPage() {
                     <td style={{ fontWeight: 500, color: 'var(--c-text)' }}>{d.name}</td>
                     <td>{d.role}</td>
                     <td>
-                      <span className={`badge ${d.type === 'Satellite' ? 'badge-cyan' : d.type === 'Ground Truth' ? 'badge-green' : 'badge-amber'}`}>
+                      <span className={`badge ${d.type === 'Satellite' || d.type === 'Aerial' ? 'badge-cyan' : d.type === 'Ground Truth' ? 'badge-green' : 'badge-amber'}`}>
                         {d.type}
                       </span>
                     </td>
@@ -153,14 +184,14 @@ export default function AboutPage() {
 
           <div className="glass-panel" style={{ padding: 32 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--c-cyan)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>
-              Hackathon Workflow
+              Deployment Workflow
             </div>
             <p style={{ color: 'var(--c-text-dim)', lineHeight: 1.75, fontSize: '0.88rem', marginBottom: 16 }}>
-              Designed for a <strong style={{ color: 'var(--c-cyan)' }}>parallel 30-hour team workflow</strong>:
+              Designed for parallel city integration and monitoring:
             </p>
             {[
-              { team: 'Sub-team A', task: 'Segmentation model training + occlusion handling + loss engineering' },
-              { team: 'Sub-team B', task: 'Graph healing scripts + network ablation + resilience index + dashboard' },
+              { team: 'AI Pipeline', task: 'Aerial & road network extraction, model inference, and gap healing' },
+              { team: 'Dashboard Integration', task: 'Resilience calculations, command console maps, and emergency planner tools' },
             ].map(t => (
               <div key={t.team} style={{ padding: '12px 0', borderBottom: '1px solid var(--c-border)' }}>
                 <div style={{ fontWeight: 600, color: 'var(--c-cyan)', fontSize: '0.85rem', marginBottom: 4 }}>{t.team}</div>
@@ -169,7 +200,7 @@ export default function AboutPage() {
             ))}
             <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
               <div style={{ fontSize: '0.8rem', color: 'var(--c-green)' }}>
-                ✓ Open-source vector baselines allow parallel development without needing satellite data upfront
+                ✓ Open-source road vector baselines allow rapid scaling to new municipalities
               </div>
             </div>
           </div>

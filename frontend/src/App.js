@@ -10,6 +10,8 @@ import LoadingScreen from './components/LoadingScreen';
 import CascadeSimulator from './components/CascadeSimulator';
 import CityComparison from './components/CityComparison';
 import ScorePage from './components/ScorePage';
+import UseCasePage from './components/UseCasePage';
+import EmergencyPage from './components/EmergencyPage';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,8 @@ export default function App() {
         <Route path="/cascade"    element={<CascadeSimulator />} />
         <Route path="/compare"    element={<CityComparison />} />
         <Route path="/score"      element={<ScorePage />} />
+        <Route path="/usecases"   element={<UseCasePage />} />
+        <Route path="/emergency"  element={<EmergencyPage />} />
       </Routes>
       {showLiveFeed && <LiveFeedModal onClose={() => setShowLiveFeed(false)} />}
     </Router>

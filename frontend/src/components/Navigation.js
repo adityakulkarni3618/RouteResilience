@@ -6,6 +6,8 @@ const NAV_LINKS = [
   { path: '/pipeline', label: 'Pipeline' },
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/simulation', label: 'Simulation' },
+  { path: '/usecases', label: 'USE CASES' },
+  { path: '/emergency', label: '🚨 EMERGENCY' },
   { path: '/compare', label: 'Compare' },
   { path: '/score', label: 'Score' },
   { path: '/about', label: 'About' },
@@ -70,7 +72,7 @@ export default function Navigation() {
               letterSpacing: '0.12em',
               whiteSpace: 'nowrap',
             }}>
-              ANTARIKSH GEOSPATIAL LAB
+              SMART CITY INTELLIGENCE PLATFORM
             </div>
           </div>
         </Link>
@@ -83,11 +85,24 @@ export default function Navigation() {
               to={link.path}
               className={`nav-link-item ${location.pathname === link.path ? 'active' : ''}`}
               style={{
-                color: location.pathname === link.path ? 'var(--c-orange)' : 'var(--c-text-dim)',
+                color: link.path === '/emergency' ? '#ef4444' : (location.pathname === link.path ? 'var(--c-orange)' : 'var(--c-text-dim)'),
                 background: location.pathname === link.path ? 'rgba(255,138,55,0.1)' : 'transparent',
                 border: location.pathname === link.path ? '1px solid rgba(255,138,55,0.2)' : '1px solid transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
               }}
             >
+              {link.path === '/emergency' && (
+                <span style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#ef4444',
+                  marginRight: 6,
+                  animation: 'pulse-dot 1.5s infinite alternate'
+                }} />
+              )}
               {link.label}
             </Link>
           ))}
@@ -98,7 +113,7 @@ export default function Navigation() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div className="status-dot online" style={{ background: 'var(--c-green)', boxShadow: '0 0 8px var(--c-green)' }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--c-text-dim)', letterSpacing: '0.05em' }}>
-              ORBIT LIVE
+              SYSTEM ACTIVE
             </span>
           </div>
           <Link to="/dashboard" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.72rem' }}>
@@ -132,14 +147,26 @@ export default function Navigation() {
               key={link.path}
               to={link.path}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
                 padding: '12px 0',
                 borderBottom: '1px solid var(--c-border)',
                 textDecoration: 'none',
-                color: location.pathname === link.path ? 'var(--c-cyan)' : 'var(--c-text-dim)',
+                color: link.path === '/emergency' ? '#ef4444' : (location.pathname === link.path ? 'var(--c-cyan)' : 'var(--c-text-dim)'),
                 fontSize: '0.95rem',
               }}
             >
+              {link.path === '/emergency' && (
+                <span style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#ef4444',
+                  marginRight: 6,
+                  animation: 'pulse-dot 1.5s infinite alternate'
+                }} />
+              )}
               {link.label}
             </Link>
           ))}
