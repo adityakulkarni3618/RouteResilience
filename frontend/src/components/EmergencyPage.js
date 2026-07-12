@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function EmergencyPage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
 
@@ -30,6 +36,16 @@ export default function EmergencyPage() {
     { route: "EMS-03", from: "NIMHANS", to: "Hebbal", dist: "14.1 km", time: "31 min", status: "Monitor", statusColor: "var(--c-orange)" },
     { route: "EMS-04", from: "Bowring Hospital", to: "KR Puram", dist: "9.4 km", time: "22 min", status: "Clear", statusColor: "var(--c-green)" }
   ];
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ paddingTop: 80, minHeight: '100vh', color: '#ffffff' }}>
@@ -127,7 +143,7 @@ export default function EmergencyPage() {
             {presets.map((p, idx) => (
               <div
                 key={idx}
-                onClick={() => navigate(`/simulation#sim/sc=${p.hash}`)}
+                onClick={() => navigate('/simulation', { state: { scenario: p.hash } })}
                 style={{
                   padding: 20,
                   borderRadius: 8,

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { getShiftedNodes, getShiftedGeoJSON, getActiveLocation, setActiveLocation, CITIES } from '../utils/locationHelper';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import CriticalityMap, { ROAD_GEOJSON } from './CriticalityMap';
@@ -45,6 +45,15 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function SimulationPage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const [toast, setToast] = useState(null);
+  const location = useLocation();
+
   const [activeLoc, setActiveLoc] = useState(() => getActiveLocation());
 
   const [customNodes, setCustomNodes] = useState(null);
@@ -63,6 +72,14 @@ export default function SimulationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (location.state && location.state.scenario) {
+      setScenario(location.state.scenario);
+    }
+  }, [location.state]);
+
+
 
   const searchCity = async (query) => {
     if (!query || query.length < 3) return;
@@ -573,6 +590,16 @@ export default function SimulationPage() {
     setShowReroute(false);
   };
 
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ paddingTop:80, minHeight:'100vh' }}>
       <div className="container" style={{ paddingTop:48, paddingBottom:80 }}>
@@ -661,6 +688,8 @@ export default function SimulationPage() {
                       setSearchResults([]);
                       setSearchQuery('');
                       setDisabledNodes([]);
+                      setToast(`✓ Loading ${result.name} road network...`);
+                      setTimeout(() => setToast(null), 3000);
                     }}
                     style={{
                       padding: '10px 14px', cursor: 'pointer', color: 'white',
@@ -1121,6 +1150,18 @@ export default function SimulationPage() {
           </div>
         </div>
       </div>
+      {toast && (
+        <div className="glass-panel" style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+          padding: '16px 20px', background: 'rgba(13,22,48,0.95)',
+          borderLeft: '3px solid var(--c-green)', borderTop: '1px solid var(--c-border)',
+          borderRight: '1px solid var(--c-border)', borderBottom: '1px solid var(--c-border)',
+          borderRadius: '6px', color: '#fff', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

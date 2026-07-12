@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CITIES, getActiveLocation } from '../utils/locationHelper';
@@ -34,6 +34,12 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function CityComparison() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const activeLoc = getActiveLocation();
 
   const DATA = React.useMemo(() => {
@@ -65,6 +71,17 @@ export default function CityComparison() {
       };
     });
   }, [activeLoc]);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ paddingTop: 80, minHeight: '100vh' }}>
       <div className="container" style={{ paddingTop: 40, paddingBottom: 80 }}>

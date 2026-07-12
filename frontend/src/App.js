@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
@@ -12,6 +12,85 @@ import CityComparison from './components/CityComparison';
 import ScorePage from './components/ScorePage';
 import UseCasePage from './components/UseCasePage';
 import EmergencyPage from './components/EmergencyPage';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--c-void)', color: '#fff', padding: '24px' }}>
+          <div className="glass-panel" style={{ padding: '36px', maxWidth: '480px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+            <h2 style={{ marginBottom: '16px', color: 'var(--c-red)' }}>Something went wrong.</h2>
+            <p style={{ color: 'var(--c-text-dim)', marginBottom: '24px' }}>An unexpected error occurred in this view.</p>
+            <a href="/" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex' }}>Return to Home</a>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
+
+function RoutesWrapper() {
+  const location = useLocation();
+  const isLanding = location.pathname === '/';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/"           element={<LandingPage />} />
+          <Route path="/dashboard"  element={<Dashboard />} />
+          <Route path="/pipeline"   element={<PipelinePage />} />
+          <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/about"      element={<AboutPage />} />
+          <Route path="/cascade"    element={<CascadeSimulator />} />
+          <Route path="/compare"    element={<CityComparison />} />
+          <Route path="/score"      element={<ScorePage />} />
+          <Route path="/usecases"   element={<UseCasePage />} />
+          <Route path="/emergency"  element={<EmergencyPage />} />
+        </Routes>
+      </div>
+      {!isLanding && (
+        <footer style={{
+          background: 'rgba(2, 4, 10, 0.95)',
+          borderTop: '1px solid var(--c-border)',
+          padding: '24px 20px',
+          textAlign: 'center',
+          fontSize: '0.78rem',
+          color: 'var(--c-text-dim)',
+          fontFamily: 'var(--font-mono)',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+            <div>
+              RouteResilience © 2026 · Smart City Intelligence Platform · Built for Lenovo Hackathon
+            </div>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <a href="https://github.com/adityakulkarni3618/RouteResilience.git" target="_blank" rel="noreferrer" style={{ color: 'var(--c-cyan)', textDecoration: 'none' }}>GitHub Repo</a>
+              <span style={{ color: 'var(--c-text-faint)' }}>|</span>
+              <a href="https://route-resilience-tau.vercel.app" target="_blank" rel="noreferrer" style={{ color: 'var(--c-cyan)', textDecoration: 'none' }}>Live Demo</a>
+              <span style={{ color: 'var(--c-text-faint)' }}>|</span>
+              <a href="https://routeresilience-1.onrender.com/docs" target="_blank" rel="noreferrer" style={{ color: 'var(--c-cyan)', textDecoration: 'none' }}>API Docs</a>
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -42,18 +121,9 @@ export default function App() {
     <Router>
       <div className="grid-overlay" />
       <Navigation />
-      <Routes>
-        <Route path="/"           element={<LandingPage />} />
-        <Route path="/dashboard"  element={<Dashboard />} />
-        <Route path="/pipeline"   element={<PipelinePage />} />
-        <Route path="/simulation" element={<SimulationPage />} />
-        <Route path="/about"      element={<AboutPage />} />
-        <Route path="/cascade"    element={<CascadeSimulator />} />
-        <Route path="/compare"    element={<CityComparison />} />
-        <Route path="/score"      element={<ScorePage />} />
-        <Route path="/usecases"   element={<UseCasePage />} />
-        <Route path="/emergency"  element={<EmergencyPage />} />
-      </Routes>
+      <ErrorBoundary>
+        <RoutesWrapper />
+      </ErrorBoundary>
       {showLiveFeed && <LiveFeedModal onClose={() => setShowLiveFeed(false)} />}
     </Router>
   );

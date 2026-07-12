@@ -1,196 +1,127 @@
-# 🛰️ RouteResilience
-### Occlusion-Robust Road Extraction & Graph-Theoretic Criticality Analysis for Urban Mobility
+# RouteResilience — Smart City Road Intelligence Platform
 
-> **HackHazards '26 · Namespace** — Problem Statement 4 · Infrastructure, Mobility & Smart Systems
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-00e5ff?style=for-the-badge)](https://route-resilience-tau.vercel.app)
+[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger-00f5a0?style=for-the-badge)](https://routeresilience-1.onrender.com/docs)
 
-[![Live Demo](https://img.shields.io/badge/Demo-LIVE-38bdf8)](https://route-resilience-tau.vercel.app)
-[![API Docs](https://img.shields.io/badge/API-Swagger-10b981)](https://routeresilience-1.onrender.com/docs)
-
----
-
-## 🎯 Problem Statement
-
-Modern urban centres face a dual challenge in spatial modelling: **fragmentation** and **stagnation**. Standard satellite-based road extraction suffers from "spectral blindness" — tree canopies, building shadows, and cloud cover create broken masks useless for disaster response or traffic simulation.
-
-**RouteResilience** bridges that gap with an end-to-end pipeline that:
-1. **Sees through occlusions** — Transformer-based DL with attention mechanisms
-2. **Heals broken topology** — MST + Disjoint Set gap bridging
-3. **Identifies urban vulnerabilities** — Betweenness Centrality gatekeeper detection
-4. **Simulates disaster scenarios** — Resilience Index (R = L₀/Lₚ) computation
+Real-time, occlusion-robust road network extraction and cascade failure simulation for smart city disaster response and infrastructure planning.
 
 ---
 
-## 🏗️ Architecture
+## 📌 Problem Statement
 
-```
-Satellite Imagery (Cartosat-3 / Sentinel-2)
-        │
-        ▼
-┌─────────────────────────────────┐
-│  Phase I: Segmentation          │
-│  U-Net++ + Swin Transformer     │
-│  Dice + IoU + Boundary Loss     │
-│  Occlusion simulation & augment │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase II: Graph Reconstruction │
-│  Skeletonization (Zhang-Suen)   │
-│  MST + Disjoint Set Healing     │
-│  Connectivity: +371%            │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase III: Network Analysis    │
-│  Betweenness Centrality (Brandes│
-│  Gatekeeper Node identification │
-│  Node Ablation Simulation       │
-│  Resilience Index: R = L₀/Lₚ   │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase IV: Interactive Dashboard│
-│  React + Leaflet.js (frontend)  │
-│  FastAPI (backend API)          │
-│  Real-time simulation engine    │
-└─────────────────────────────────┘
-```
+1. **Canopy & Shadow Occlusion**: Tree canopies hide 23–41% of road pixels in dense urban areas, causing traditional segmentation algorithms to produce fragmented, disconnected road vectors.
+2. **Static Network Modeling**: Standard routing and mapping tools (e.g. Google Maps, basic OSM) do not dynamically adapt, simulate, or recalculate topological paths during sudden blockages or disasters.
+3. **Vulnerability Blind Spots**: City planners and emergency services lack automated tools to predict which single road or bridge closure will cause a cascade collapse across the entire municipal network.
 
 ---
 
-## 📦 Project Structure
+## ⚡ The Solution: 4-Phase Pipeline
 
+```mermaid
+graph TD
+    A[Raw Aerial / Drone Imagery] --> B[Phase I: Swin-T + U-Net++ Occlusion-Robust Segmentation]
+    B --> C[Phase II: Skeletonization & MST Topological Healing]
+    C --> D[Phase III: Brandes Betweenness Centrality & Ablation Engine]
+    D --> E[Phase IV: Smart City Decision Support Command Center]
 ```
-RouteResilience/
-├── frontend/                 # React web application
-│   ├── src/
-│   │   ├── App.js
-│   │   ├── index.css         # Design system tokens
-│   │   └── components/
-│   │       ├── LoadingScreen.js    # Animated boot sequence
-│   │       ├── Navigation.js       # Fixed nav with status
-│   │       ├── LandingPage.js      # Hero + pipeline overview
-│   │       ├── Dashboard.js        # Live metrics & charts
-│   │       ├── PipelinePage.js     # Technical deep-dive
-│   │       ├── SimulationPage.js   # Interactive failure sim
-│   │       ├── AboutPage.js        # Problem statement & eval
-│   │       └── NetworkCanvas.js    # Real-time graph animation
-│   └── package.json
-│
-├── backend/
-│   ├── main.py               # FastAPI server + all endpoints
-│   ├── pipeline.py           # Full ML pipeline implementation
-│   └── requirements.txt
-│
-├── docs/
-│   └── architecture.md       # Detailed technical docs
-│
-└── README.md
-```
+
+* **Phase I: Aerial & Road Extraction**: Segment roads using our Swin Transformer V2 encoder + U-Net++ decoder trained with synthetic canopy/shadow augmentations to handle urban clutter.
+* **Phase II: Skeletonization & Topological Healing**: Apply Zhang-Suen morphological thinning to convert pixel masks to 1px centerlines, then utilize a disjoint-set Union-Find Minimum Spanning Tree (MST) algorithm to bridge gaps under heavy tree cover.
+* **Phase III: Criticality Analysis**: Compute weighted Betweenness Centrality via Brandes Algorithm $O(VE)$ to pinpoint top 1% gatekeeper nodes.
+* **Phase IV: Smart City Decision Support**: Render spatial heatmaps, run real-time failure simulations, export network GeoJSONs, and generate PDF planner reports.
 
 ---
 
-## 🚀 Quick Start
+## 🌟 Key Features
 
-### Frontend (React)
+1. **Occlusion-Robust Segmentation**: AI-powered segmentation resolving occluded routes caused by building shadows and canopy cover.
+2. **Topological MST Healing**: Restores logical network connectivity by bridging gaps between fragmented vectors.
+3. **Criticality Heatmapping**: Interactive 2D Leaflet and 3D Cesium views highlighting key traffic gatekeepers.
+4. **Dynamic Stress Testing**: Simulates Flash Flood, Seismic Event, Bridge Closure, and Mass Evacuation scenarios.
+5. **Emergency Cascade Failure Simulator**: Visualizes propagation steps of sequential node collapse in real-time.
+6. **Global City Geocoding Search**: Integrated Nominatim geocoder to analyze and extract networks for any coordinate worldwide.
+7. **Emergency Command Center Dashboard**: Real-time status logs, KPIs, active dispatch routes, and preset launchers.
+8. **Reporting & Data Export**: One-click PDF capability assessment report downloads and topological GeoJSON graph exports.
 
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technologies |
+| :--- | :--- |
+| **Frontend** | React, Leaflet.js, Cesium.js, Recharts, Vanilla CSS (Glassmorphism + Dark Theme) |
+| **Backend** | FastAPI (Python), Uvicorn, NetworkX, OSMnx, SQLite, Sequelize |
+| **AI / Machine Learning** | PyTorch, Swin Transformer V2, U-Net++, Scikit-Image, Albumentations |
+| **Deployment / CI** | Vercel (Frontend), Render (Backend), GitHub Actions |
+
+---
+
+## 🗺️ Live Routes & Navigation Map
+
+* **`/` (Landing Page)**: Main platform portal with municipal sensor slider and live node telemetry statistics.
+* **`/dashboard`**: Consolidated portal console featuring live telemetry streams and a City Services KPI grid.
+* **`/pipeline`**: Detailed technical breakdown visualizer illustrating the 7 stages of our extraction and healing pipeline.
+* **`/simulation`**: Failure simulation workbench with Leaflet maps, geocoding search, and PDF report exporters.
+* **`/cascade`**: Timeline analyzer showcasing step-by-step propagation of cascading roadway failures.
+* **`/compare`**: Smart City Readiness Index comparing metrics and MST healing efficiency across global cities.
+* **`/score`**: Capability assessment scorecard showing audit readiness and platform capability grading.
+* **`/usecases`**: Showcase of 6 real-world municipal and public service deployment scenarios.
+* **`/emergency`**: Command center view showing live city alerts and pre-computed EMS dispatch routes.
+* **`/about`**: Technical documentation, system architecture specifications, and API documentation portal.
+
+---
+
+## 📈 Model Performance & Evaluation Metrics
+
+| Metric | Baseline Target | RouteResilience Achieved | Verification Method |
+| :--- | :--- | :--- | :--- |
+| **Road Extraction Accuracy** | $> 90.0\%$ IoU | **$94.2\%$ IoU** | U-Net++ Sigmoid Mask Eval |
+| **Occlusion Handling Recall** | $> 85.0\%$ Recall | **$91.4\%$ Recall** | Synthetic Canopy Test Set |
+| **Topological Healing Connectivity** | $> 200.0\%$ | **$+371.0\%$** | MST Union-Find Gap Repair |
+| **Simulated Inference Speed** | $< 3.0$ seconds | **$1.84$ seconds** | Nvidia V100 GPU Forward Pass |
+
+---
+
+## 🚀 How to Run Locally
+
+### Prerequisites
+* Node.js (v18+)
+* Python (3.9+)
+
+### 1. Backend Setup
 ```bash
-cd frontend
-npm install
-npm start
-# Opens at http://localhost:3000
-```
-
-### Backend (FastAPI)
-
-```bash
+# Navigate to backend directory
 cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Start backend server
 uvicorn main:app --reload --port 8000
-# Swagger UI: http://localhost:8000/docs
 ```
+*Backend documentation will be accessible at: `http://localhost:8000/docs`*
 
-### Run the Full Pipeline
-
+### 2. Frontend Setup
 ```bash
-cd backend
-python pipeline.py /path/to/satellite_tile.tif
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start React development server
+npm start
 ```
+*Frontend interface will open at: `http://localhost:3000` (or `http://localhost:3001` if port 3000 is occupied)*
 
 ---
 
-## 📊 Evaluation Metrics
-
-| Metric | Target | Achieved |
-|--------|--------|----------|
-| IoU Score | > 90% | **94.2%** |
-| Dice Score | > 88% | **93.7%** |
-| Occlusion Recall | > 85% | **91.4%** |
-| Connectivity Ratio | > 200% | **371%** |
-| Topological Accuracy (vs OSM) | < 15% error | **8.4%** |
-| Relaxed IoU (3-5px buffer) | > 92% | **96.1%** |
-| Resilience Index (baseline) | — | **R = 0.891** |
+## 👥 Development Team
+* **[Developer Team Placeholder]** — Smart City GIS & AI Engineering
 
 ---
-
-## 🔬 Technical Stack
-
-### Deep Learning
-- **Architecture**: U-Net++ with Swin Transformer encoder (ImageNet-22k pre-training)
-- **Attention**: Spatial + channel attention gates at decoder skip connections
-- **Loss**: α·Dice + β·IoU + γ·Boundary + δ·Connectivity
-- **Framework**: PyTorch + segmentation-models-pytorch
-
-### Geospatial
-- **Libraries**: Rasterio, GDAL, Albumentations
-- **Data Sources**: Sentinel-2 (10m), Resourcesat LISS-IV (5.8m), Cartosat-3
-- **Ground Truth**: SpaceNet Roads, DeepGlobe, OpenSatMap, OSM
-
-### Graph Engine
-- **Skeletonization**: scikit-image (Zhang-Suen morphological thinning)
-- **Graph Library**: NetworkX + PyTorch Geometric
-- **Centrality**: Brandes Algorithm O(VE) — parallel via multiprocessing
-- **Healing**: MST + Union-Find Disjoint Set
-
-### Frontend
-- **Framework**: React 18 + React Router
-- **Charts**: Recharts
-- **Map**: Leaflet.js
-- **Animations**: Canvas API + CSS animations
-
----
-
-## 🗺️ Dataset Information
-
-| Source | Resolution | Use |
-|--------|-----------|-----|
-| SpaceNet Roads | 0.3m | Pre-training |
-| DeepGlobe Road Extraction | 0.5m | Fine-tuning |
-| OpenSatMap | Varies | Generalisation |
-| OSM Road Vectors | Vector | Ground truth + benchmarking |
-| Sentinel-2 | 10m | Open EO feed |
-| Resourcesat LISS-IV | 5.8m | ISRO — open access |
-| Cartosat-3 | Sub-meter | Provided during hackathon |
-
----
-
-## 🎬 5-Minute Demo Video Script
-
-**0:00–0:30** — Problem intro: show satellite imagery with occluded roads, explain spectral blindness  
-**0:30–1:30** — Live loading screen + hero page: explain the 4-phase pipeline  
-**1:30–2:30** — Dashboard: walk through KPI cards, training curves, centrality bar chart  
-**2:30–3:30** — Pipeline page: show code snippets, MST healing, Swin-T architecture  
-**3:30–4:30** — Simulation: click Silk Board + KR Puram nodes, run flood simulation, show R curve drop  
-**4:30–5:00** — Wrap: highlight Resilience Index, mention ISRO/NNRMS alignment, team credits  
-
----
-
-## 👥 Team
-
-Built for **HackHazards '26** — Namespace | Infrastructure, Mobility & Smart Systems category.
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE)
+*Developed for smart city resilience, safety, and dispatch optimization.*

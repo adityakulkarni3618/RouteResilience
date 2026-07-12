@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ScorePage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const criteria = [
     { criterion: 'Road Extraction Accuracy (IoU > 90%)', weight: 15, score: 15, achieved: '94.2% IoU on aerial imagery', evidence: '/api/metrics/eval-suite' },
     { criterion: 'Occlusion Handling (Recall > 85%)', weight: 15, score: 15, achieved: '91.4% recall under canopy/shadow', evidence: 'test_eval_metrics.py' },
@@ -13,6 +19,16 @@ export default function ScorePage() {
   
   const total = criteria.reduce((s, c) => s + c.score, 0);
   const maxTotal = criteria.reduce((s, c) => s + c.weight, 0);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ paddingTop: 80, minHeight: '100vh' }}>
