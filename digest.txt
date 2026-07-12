@@ -2620,203 +2620,7 @@ R = 0.40 â†’  Network collapse threshold
 ================================================
 FILE: frontend/README.md
 ================================================
-# 🛰️ RouteResilience
-### Occlusion-Robust Road Extraction & Graph-Theoretic Criticality Analysis for Urban Mobility
-
-> **HackHazards '26 · Namespace** — Problem Statement 4 · Infrastructure, Mobility & Smart Systems
-
-[![Live Demo](https://img.shields.io/badge/Demo-LIVE-38bdf8)](https://route-resilience-tau.vercel.app)
-[![API Docs](https://img.shields.io/badge/API-Swagger-10b981)](https://routeresilience-1.onrender.com/docs)
-
----
-
-## 🎯 Problem Statement
-
-Modern urban centres face a dual challenge in spatial modelling: **fragmentation** and **stagnation**. Standard satellite-based road extraction suffers from "spectral blindness" — tree canopies, building shadows, and cloud cover create broken masks useless for disaster response or traffic simulation.
-
-**RouteResilience** bridges that gap with an end-to-end pipeline that:
-1. **Sees through occlusions** — Transformer-based DL with attention mechanisms
-2. **Heals broken topology** — MST + Disjoint Set gap bridging
-3. **Identifies urban vulnerabilities** — Betweenness Centrality gatekeeper detection
-4. **Simulates disaster scenarios** — Resilience Index (R = L₀/Lₚ) computation
-
----
-
-## 🏗️ Architecture
-
-```
-Satellite Imagery (Cartosat-3 / Sentinel-2)
-        │
-        ▼
-┌─────────────────────────────────┐
-│  Phase I: Segmentation          │
-│  U-Net++ + Swin Transformer     │
-│  Dice + IoU + Boundary Loss     │
-│  Occlusion simulation & augment │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase II: Graph Reconstruction │
-│  Skeletonization (Zhang-Suen)   │
-│  MST + Disjoint Set Healing     │
-│  Connectivity: +371%            │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase III: Network Analysis    │
-│  Betweenness Centrality (Brandes│
-│  Gatekeeper Node identification │
-│  Node Ablation Simulation       │
-│  Resilience Index: R = L₀/Lₚ   │
-└─────────────┬───────────────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Phase IV: Interactive Dashboard│
-│  React + Leaflet.js (frontend)  │
-│  FastAPI (backend API)          │
-│  Real-time simulation engine    │
-└─────────────────────────────────┘
-```
-
----
-
-## 📦 Project Structure
-
-```
-RouteResilience/
-├── frontend/                 # React web application
-│   ├── src/
-│   │   ├── App.js
-│   │   ├── index.css         # Design system tokens
-│   │   └── components/
-│   │       ├── LoadingScreen.js    # Animated boot sequence
-│   │       ├── Navigation.js       # Fixed nav with status
-│   │       ├── LandingPage.js      # Hero + pipeline overview
-│   │       ├── Dashboard.js        # Live metrics & charts
-│   │       ├── PipelinePage.js     # Technical deep-dive
-│   │       ├── SimulationPage.js   # Interactive failure sim
-│   │       ├── AboutPage.js        # Problem statement & eval
-│   │       └── NetworkCanvas.js    # Real-time graph animation
-│   └── package.json
-│
-├── backend/
-│   ├── main.py               # FastAPI server + all endpoints
-│   ├── pipeline.py           # Full ML pipeline implementation
-│   └── requirements.txt
-│
-├── docs/
-│   └── architecture.md       # Detailed technical docs
-│
-└── README.md
-```
-
----
-
-## 🚀 Quick Start
-
-### Frontend (React)
-
-```bash
-cd frontend
-npm install
-npm start
-# Opens at http://localhost:3000
-```
-
-### Backend (FastAPI)
-
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-# Swagger UI: http://localhost:8000/docs
-```
-
-### Run the Full Pipeline
-
-```bash
-cd backend
-python pipeline.py /path/to/satellite_tile.tif
-```
-
----
-
-## 📊 Evaluation Metrics
-
-| Metric | Target | Achieved |
-|--------|--------|----------|
-| IoU Score | > 90% | **94.2%** |
-| Dice Score | > 88% | **93.7%** |
-| Occlusion Recall | > 85% | **91.4%** |
-| Connectivity Ratio | > 200% | **371%** |
-| Topological Accuracy (vs OSM) | < 15% error | **8.4%** |
-| Relaxed IoU (3-5px buffer) | > 92% | **96.1%** |
-| Resilience Index (baseline) | — | **R = 0.891** |
-
----
-
-## 🔬 Technical Stack
-
-### Deep Learning
-- **Architecture**: U-Net++ with Swin Transformer encoder (ImageNet-22k pre-training)
-- **Attention**: Spatial + channel attention gates at decoder skip connections
-- **Loss**: α·Dice + β·IoU + γ·Boundary + δ·Connectivity
-- **Framework**: PyTorch + segmentation-models-pytorch
-
-### Geospatial
-- **Libraries**: Rasterio, GDAL, Albumentations
-- **Data Sources**: Sentinel-2 (10m), Resourcesat LISS-IV (5.8m), Cartosat-3
-- **Ground Truth**: SpaceNet Roads, DeepGlobe, OpenSatMap, OSM
-
-### Graph Engine
-- **Skeletonization**: scikit-image (Zhang-Suen morphological thinning)
-- **Graph Library**: NetworkX + PyTorch Geometric
-- **Centrality**: Brandes Algorithm O(VE) — parallel via multiprocessing
-- **Healing**: MST + Union-Find Disjoint Set
-
-### Frontend
-- **Framework**: React 18 + React Router
-- **Charts**: Recharts
-- **Map**: Leaflet.js
-- **Animations**: Canvas API + CSS animations
-
----
-
-## 🗺️ Dataset Information
-
-| Source | Resolution | Use |
-|--------|-----------|-----|
-| SpaceNet Roads | 0.3m | Pre-training |
-| DeepGlobe Road Extraction | 0.5m | Fine-tuning |
-| OpenSatMap | Varies | Generalisation |
-| OSM Road Vectors | Vector | Ground truth + benchmarking |
-| Sentinel-2 | 10m | Open EO feed |
-| Resourcesat LISS-IV | 5.8m | ISRO — open access |
-| Cartosat-3 | Sub-meter | Provided during hackathon |
-
----
-
-## 🎬 5-Minute Demo Video Script
-
-**0:00–0:30** — Problem intro: show satellite imagery with occluded roads, explain spectral blindness  
-**0:30–1:30** — Live loading screen + hero page: explain the 4-phase pipeline  
-**1:30–2:30** — Dashboard: walk through KPI cards, training curves, centrality bar chart  
-**2:30–3:30** — Pipeline page: show code snippets, MST healing, Swin-T architecture  
-**3:30–4:30** — Simulation: click Silk Board + KR Puram nodes, run flood simulation, show R curve drop  
-**4:30–5:00** — Wrap: highlight Resilience Index, mention ISRO/NNRMS alignment, team credits  
-
----
-
-## 👥 Team
-
-Built for **HackHazards '26** — Namespace | Infrastructure, Mobility & Smart Systems category.
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE)
-
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 3238: character maps to <undefined>
 
 
 ================================================
@@ -2908,7 +2712,7 @@ FILE: frontend/public/index.html
   <meta name="theme-color" content="#0a0f1e" />
   <meta name="description"
     content="RouteResilience â€” Occlusion-Robust Road Extraction & Graph-Theoretic Criticality Analysis for Urban Mobility" />
-  <title>RouteResilience | Urban Road Intelligence</title>
+  <title>RouteResilience | Smart City Road Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -2928,7 +2732,7 @@ FILE: frontend/public/index.html
 ================================================
 FILE: frontend/src/App.js
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 4181: character maps to <undefined>
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 7239: character maps to <undefined>
 
 
 ================================================
@@ -3776,13 +3580,13 @@ root.render(
 ================================================
 FILE: frontend/src/components/AboutPage.js
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 3331: character maps to <undefined>
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 4221: character maps to <undefined>
 
 
 ================================================
 FILE: frontend/src/components/CascadeSimulator.js
 ================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getShiftedNodes } from '../utils/locationHelper';
 import { API_URL } from '../config';
 
@@ -3798,6 +3602,12 @@ const CITY_NODES_BASE = [
 ];
 
 export default function CascadeSimulator() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const CITY_NODES = getShiftedNodes(CITY_NODES_BASE);
 
   const [triggerNodeId, setTriggerNodeId] = useState(0);
@@ -3806,6 +3616,16 @@ export default function CascadeSimulator() {
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
   const [visibleCount, setVisibleCount] = useState(0);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
 
   const handleSimulate = async () => {
     setLoading(true);
@@ -4298,7 +4118,7 @@ export default function CesiumView({ activeLoc, customNodes, activeGeoJSON }) {
 ================================================
 FILE: frontend/src/components/CityComparison.js
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x9d in position 4382: character maps to <undefined>
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x9d in position 5273: character maps to <undefined>
 
 
 ================================================
@@ -4310,219 +4130,13 @@ Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in posi
 ================================================
 FILE: frontend/src/components/Dashboard.js
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x90 in position 16094: character maps to <undefined>
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x90 in position 16979: character maps to <undefined>
 
 
 ================================================
 FILE: frontend/src/components/EmergencyPage.js
 ================================================
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-export default function EmergencyPage() {
-  const navigate = useNavigate();
-  const [time, setTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const kpiData = [
-    { label: "Active Road Nodes", value: "12,847", color: "var(--c-green)" },
-    { label: "Network Resilience", value: "R=0.891", color: "var(--c-cyan)" },
-    { label: "Critical Nodes", value: "143", color: "var(--c-orange)" },
-    { label: "Alternate Routes Ready", value: "28", color: "var(--c-green)" }
-  ];
-
-  const presets = [
-    { label: "Flash Flood", icon: "🌊", hash: "flood", hoverColor: "rgba(239, 68, 68, 0.4)" },
-    { label: "Seismic Event", icon: "🏚️", hash: "earthquake", hoverColor: "rgba(245, 158, 11, 0.4)" },
-    { label: "Bridge Closure", icon: "🌉", hash: "collapse", hoverColor: "rgba(234, 179, 8, 0.4)" },
-    { label: "Mass Evacuation", icon: "🚶", hash: "evacuation", hoverColor: "rgba(6, 182, 212, 0.4)" }
-  ];
-
-  const routes = [
-    { route: "EMS-01", from: "Victoria Hospital", to: "Silk Board", dist: "8.2 km", time: "18 min", status: "Clear", statusColor: "var(--c-green)" },
-    { route: "EMS-02", from: "Fire Station HSR", to: "Marathahalli", dist: "5.7 km", time: "12 min", status: "Clear", statusColor: "var(--c-green)" },
-    { route: "EMS-03", from: "NIMHANS", to: "Hebbal", dist: "14.1 km", time: "31 min", status: "Monitor", statusColor: "var(--c-orange)" },
-    { route: "EMS-04", from: "Bowring Hospital", to: "KR Puram", dist: "9.4 km", time: "22 min", status: "Clear", statusColor: "var(--c-green)" }
-  ];
-
-  return (
-    <div style={{ paddingTop: 80, minHeight: '100vh', color: '#ffffff' }}>
-      <div className="container" style={{ paddingTop: 48, paddingBottom: 80 }}>
-        
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="section-eyebrow">
-              <span className="status-dot" style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: '#ef4444',
-                boxShadow: '0 0 10px #ef4444',
-                animation: 'pulse-dot 1s infinite alternate'
-              }} />
-              <span style={{ color: '#ef4444', fontWeight: 800 }}>EMERGENCY COMMAND CENTER</span>
-            </div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginTop: 8 }}>
-              City Emergency Response Dashboard
-            </h1>
-            <p style={{ color: 'var(--c-text-dim)', fontSize: '1rem', marginTop: 4 }}>
-              Real-time road network status for emergency coordinators and first responders
-            </p>
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--c-text-faint)',
-            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239,68,68,0.2)',
-            padding: '12px 18px', borderRadius: 8
-          }}>
-            SYSTEM TIME: {time.toLocaleTimeString()}
-          </div>
-        </div>
-
-        {/* Section 1 — Alert Status Bar */}
-        <div className="glass-panel" style={{
-          padding: '18px 24px',
-          marginBottom: 32,
-          background: 'rgba(239, 68, 68, 0.08)',
-          border: '1px solid rgba(239, 68, 68, 0.25)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 16
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-            <span>🟡</span>
-            <span style={{ color: 'var(--c-text-dim)' }}>
-              <strong>WATCH:</strong> Silk Board Junction — High betweenness load detected
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-            <span>🟢</span>
-            <span style={{ color: 'var(--c-text-dim)' }}>
-              <strong>CLEAR:</strong> NH-44 Corridor — All lanes operational
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-            <span>🔴</span>
-            <span style={{ color: 'var(--c-text-dim)' }}>
-              <strong>ALERT:</strong> KR Puram Bridge — Reduced capacity, monitor closely
-            </span>
-          </div>
-        </div>
-
-        {/* Section 2 — KPI Cards */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 20,
-          marginBottom: 40
-        }}>
-          {kpiData.map((kpi, idx) => (
-            <div key={idx} className="glass-panel" style={{ padding: 20, borderLeft: `3px solid ${kpi.color}` }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--c-text-faint)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-                {kpi.label}
-              </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: kpi.color, marginTop: 8 }}>
-                {kpi.value}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Section 3 — Quick Scenario Launcher */}
-        <div className="glass-panel" style={{ padding: 24, marginBottom: 40 }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 16 }}>
-            Launch Emergency Simulation
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 20
-          }}>
-            {presets.map((p, idx) => (
-              <div
-                key={idx}
-                onClick={() => navigate(`/simulation#sim/sc=${p.hash}`)}
-                style={{
-                  padding: 20,
-                  borderRadius: 8,
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid var(--c-border)',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = p.hoverColor.replace('0.4', '0.8');
-                  e.currentTarget.style.background = p.hoverColor;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--c-border)';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>{p.icon}</div>
-                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 4 — Pre-planned Routes */}
-        <div className="glass-panel" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 16 }}>
-            Pre-Computed Emergency Routes
-          </h2>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table" style={{ margin: 0, width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>Route</th>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>From</th>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>To</th>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>Distance</th>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>Est. Time</th>
-                  <th style={{ color: 'var(--c-text-faint)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {routes.map((r, idx) => (
-                  <tr key={idx} style={{ background: 'rgba(255, 255, 255, 0.01)' }}>
-                    <td style={{ fontWeight: 700, color: 'var(--c-cyan)' }}>{r.route}</td>
-                    <td>{r.from}</td>
-                    <td>{r.to}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)' }}>{r.dist}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)' }}>{r.time}</td>
-                    <td>
-                      <span style={{
-                        color: r.statusColor,
-                        padding: '3px 8px',
-                        borderRadius: 4,
-                        background: r.statusColor + '20',
-                        border: '1px solid ' + r.statusColor + '40',
-                        fontSize: '0.78rem',
-                        fontWeight: 600
-                      }}>
-                        {r.status === 'Clear' ? '✅ Clear' : '⚠️ Monitor'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
+[Binary file]
 
 
 ================================================
@@ -5710,15 +5324,21 @@ Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in posi
 ================================================
 FILE: frontend/src/components/PipelinePage.js
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x90 in position 28572: character maps to <undefined>
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x90 in position 29457: character maps to <undefined>
 
 
 ================================================
 FILE: frontend/src/components/ScorePage.js
 ================================================
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ScorePage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const criteria = [
     { criterion: 'Road Extraction Accuracy (IoU > 90%)', weight: 15, score: 15, achieved: '94.2% IoU on aerial imagery', evidence: '/api/metrics/eval-suite' },
     { criterion: 'Occlusion Handling (Recall > 85%)', weight: 15, score: 15, achieved: '91.4% recall under canopy/shadow', evidence: 'test_eval_metrics.py' },
@@ -5731,6 +5351,16 @@ export default function ScorePage() {
   
   const total = criteria.reduce((s, c) => s + c.score, 0);
   const maxTotal = criteria.reduce((s, c) => s + c.weight, 0);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ paddingTop: 80, minHeight: '100vh' }}>
@@ -5778,7 +5408,7 @@ FILE: frontend/src/components/SimulationPage.js
 ================================================
 import React, { useState, useCallback, useEffect } from 'react';
 import { getShiftedNodes, getShiftedGeoJSON, getActiveLocation, setActiveLocation, CITIES } from '../utils/locationHelper';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import CriticalityMap, { ROAD_GEOJSON } from './CriticalityMap';
@@ -5823,6 +5453,15 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function SimulationPage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const [toast, setToast] = useState(null);
+  const location = useLocation();
+
   const [activeLoc, setActiveLoc] = useState(() => getActiveLocation());
 
   const [customNodes, setCustomNodes] = useState(null);
@@ -5841,6 +5480,14 @@ export default function SimulationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (location.state && location.state.scenario) {
+      setScenario(location.state.scenario);
+    }
+  }, [location.state]);
+
+
 
   const searchCity = async (query) => {
     if (!query || query.length < 3) return;
@@ -6351,6 +5998,16 @@ export default function SimulationPage() {
     setShowReroute(false);
   };
 
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ paddingTop:80, minHeight:'100vh' }}>
       <div className="container" style={{ paddingTop:48, paddingBottom:80 }}>
@@ -6439,6 +6096,8 @@ export default function SimulationPage() {
                       setSearchResults([]);
                       setSearchQuery('');
                       setDisabledNodes([]);
+                      setToast(`✓ Loading ${result.name} road network...`);
+                      setTimeout(() => setToast(null), 3000);
                     }}
                     style={{
                       padding: '10px 14px', cursor: 'pointer', color: 'white',
@@ -6899,6 +6558,18 @@ export default function SimulationPage() {
           </div>
         </div>
       </div>
+      {toast && (
+        <div className="glass-panel" style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+          padding: '16px 20px', background: 'rgba(13,22,48,0.95)',
+          borderLeft: '3px solid var(--c-green)', borderTop: '1px solid var(--c-border)',
+          borderRight: '1px solid var(--c-border)', borderBottom: '1px solid var(--c-border)',
+          borderRadius: '6px', color: '#fff', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
@@ -6908,7 +6579,7 @@ export default function SimulationPage() {
 ================================================
 FILE: frontend/src/components/UseCasePage.js
 ================================================
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const USE_CASES = [
@@ -6963,6 +6634,22 @@ const USE_CASES = [
 ];
 
 export default function UseCasePage() {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '120px 48px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh', justifyContent: 'center' }}>
+        <div style={{ height: '40px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+        <div style={{ height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', animation: 'pulse-dot 1.5s infinite alternate' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ paddingTop: 80, minHeight: '100vh', color: '#ffffff' }}>
       <div className="container" style={{ paddingTop: 48, paddingBottom: 80 }}>
